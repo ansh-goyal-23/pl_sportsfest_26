@@ -473,7 +473,7 @@ const SPORTS = [
 
 {
   id:'freedom-run', name:'Freedom Run', short:'5K Marathon', icon:'🏃',
-  dateLabel:'15 Aug · 5:45 AM', venue:'Society Back Gate', feeLabel:'Free — on the spot',
+  dateLabel:'15 Aug · 5:45 AM', venue:"Back Gate → Backside → Amrapali → CNG → Society's Central Park", feeLabel:'Free — on the spot',
   tagline:'A 5 km run to kick off Independence week and the whole Sports Fest.',
   registration:{ mode:'onspot' },
   rulesHtml:`
@@ -485,7 +485,7 @@ const SPORTS = [
     <tr><td>5:45 AM</td><td>Run starts</td></tr></table>
     <h4>Good to know</h4>
     <ul>
-      <li>Venue: Society Back Gate</li>
+      <li>Venue: Back Gate, via Backside, Amrapali and CNG, finishing at the Society's Central Park</li>
       <li>Distance: 5 km, hydration points available on the route</li>
       <li>Free for all residents — no registration fee</li>
       <li>Registrations are taken on the spot on the day of the run</li>
@@ -498,7 +498,7 @@ const SPORTS = [
 
 {
   id:'field-games', name:'Field Games', short:'Kids · Track & Field', icon:'🏅',
-  dateLabel:'15 Aug · after Flag Hoisting', venue:'Society Grounds', feeLabel:'Free',
+  dateLabel:'15 Aug · after Flag Hoisting', venue:"Society's Central Park", feeLabel:'Free',
   tagline:'50m Race, Relay Race and Long Jump for kids — boys and girls compete separately.',
   registration:{
     mode:'form',
@@ -533,7 +533,7 @@ const SPORTS = [
 
 {
   id:'basketball', name:'3+1 Basketball', short:'Half-court · 3v3', icon:'🏀',
-  dateLabel:'16 Aug', venue:'Basketball Court', feeLabel:'₹600 per team',
+  dateLabel:'16 Aug', venue:"Society's Basketball Court", feeLabel:'₹600 per team',
   tagline:'Half-court 3-vs-3 basketball with one substitute, across U10, U14 and Open categories.',
   registration:{
     mode:'form',
@@ -589,7 +589,7 @@ const SPORTS = [
 
 {
   id:'lawn-tennis', name:'Lawn Tennis', short:'Singles & Doubles', icon:'🎾',
-  dateLabel:'16–31 Aug · date TBA', venue:'Society Lawn Tennis Court', feeLabel:'₹300 singles · ₹600 doubles',
+  dateLabel:'16 Aug', venue:"Society's Lawn Tennis Court", feeLabel:'₹300 singles · ₹600 doubles',
   tagline:"Under-14 doubles plus Open Men's, Women's and Mixed Doubles.",
   registration:{
     mode:'form',
@@ -628,7 +628,7 @@ const SPORTS = [
 
 {
   id:'badminton', name:'Badminton', short:'Singles & Doubles', icon:'🏸',
-  dateLabel:'22–23 Aug', venue:'Badminton Court', feeLabel:'₹300 singles · ₹600 doubles · Free for 60+',
+  dateLabel:'22–24 Aug', venue:"Society's Badminton Court", feeLabel:'₹300 singles · ₹600 doubles · Free for 60+',
   tagline:"Men's & Women's Singles, Men's, Women's & Mixed Doubles across four age categories.",
   registration:{
     mode:'form',
@@ -658,7 +658,7 @@ const SPORTS = [
 
 {
   id:'table-tennis', name:'Table Tennis', short:'Singles & Doubles', icon:'🏓',
-  dateLabel:'16–31 Aug · date TBA', venue:'Indoor Games Room', feeLabel:'₹300 singles · ₹600 doubles · Free for 60+',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'₹300 singles · ₹600 doubles · Free for 60+',
   tagline:"Men's & Women's Singles and Doubles across Under 10, Under 14, Open and 60+.",
   registration:{
     mode:'form',
@@ -684,7 +684,7 @@ const SPORTS = [
 
 {
   id:'chess', name:'Chess', short:'Individual', icon:'♟️',
-  dateLabel:'16–31 Aug · date TBA', venue:'Community Hall', feeLabel:'₹300 per person',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'₹300 per person',
   tagline:'Individual chess competition in Under 10 and Open categories.',
   registration:{
     mode:'form',
@@ -703,7 +703,7 @@ const SPORTS = [
 
 {
   id:'carrom', name:'Carrom', short:'Singles & Doubles', icon:'⚪',
-  dateLabel:'16–31 Aug · date TBA', venue:'Community Hall', feeLabel:'₹300 singles · ₹600 doubles',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'₹300 singles · ₹600 doubles',
   tagline:'Singles and doubles carrom in Under 10 and Open categories.',
   registration:{
     mode:'form',
@@ -725,7 +725,7 @@ const SPORTS = [
 
 {
   id:'pool', name:'Pool', short:'8-Ball · Singles', icon:'🎱',
-  dateLabel:'16–31 Aug · date TBA', venue:'Community Hall', feeLabel:'₹300 per person',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'₹300 per person',
   tagline:'Open category 8-Ball Pool, individual competition.',
   registration:{
     mode:'form',
@@ -745,7 +745,7 @@ const SPORTS = [
 
 {
   id:'football', name:'Football', short:'Auction format', icon:'⚽',
-  dateLabel:'16–31 Aug · date TBA', venue:'Society Grounds', feeLabel:'Paid — amount TBA',
+  dateLabel:'22–23 Aug · Evening', venue:'Ground Nearby', feeLabel:'Paid — amount TBA',
   tagline:'Individual paid registration followed by a player auction to form teams. Full details coming soon.',
   registration:{ mode:'contact' },
   rulesHtml:`
@@ -922,12 +922,12 @@ async function renderTicker(){
    PAGE: HOME
    ========================================================= */
 const TIMELINE = [
-  {date:'15 Aug', title:'Freedom Run — 5K', desc:'5:45 AM start from the Back Gate, open to all, on-spot registration.'},
-  {date:'15 Aug', title:'Flag Hoisting + Field Games', desc:'50m Race, Relay Race and Long Jump for kids, plus on-spot challenges for everyone.'},
-  {date:'16 Aug', title:'3+1 Basketball begins', desc:'League + knockout, U10 / U14 / Open, Boys & Girls.'},
-  {date:'16–31 Aug', title:'Indoor & Outdoor Sports', desc:'Lawn Tennis, Table Tennis, Chess, Carrom, Pool and Football roll out through the fortnight.'},
-  {date:'22–23 Aug', title:'Badminton', desc:'Singles & Doubles across four age categories.'},
-  {date:'31 Aug', title:'Closing & Awards', desc:'Final matches wrap up and the Sports Fest closes out.'},
+  {date:'15 Aug', title:'Freedom Run — 5K', desc:"5:45 AM start from the Back Gate, route via Backside, Amrapali and CNG to the Society's Central Park."},
+  {date:'15 Aug', title:'Flag Hoisting + Field Games', desc:"50m Race, Relay Race and Long Jump for kids at the Central Park, plus on-spot challenges for everyone."},
+  {date:'16 Aug', title:'Basketball & Lawn Tennis', desc:"3+1 Basketball at the Basketball Court and Lawn Tennis at the Lawn Tennis Court — both begin today."},
+  {date:'22–23 Aug', title:'Clubhouse Games', desc:'Table Tennis, Chess, Carrom and Pool all run through the Clubhouse.'},
+  {date:'22–23 Aug · Evening', title:'Football', desc:'Auction-format football at the ground nearby.'},
+  {date:'22–24 Aug', title:'Badminton', desc:'Singles & Doubles across four age categories at the Badminton Court.'},
 ];
 
 async function renderHome(){
@@ -1062,7 +1062,7 @@ async function renderSchedule(){
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Schedule</div>
         <h1 class="h-lg" style="color:var(--bright)">15 – 31 August, day by day</h1>
-        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Several indoor sports don't have a locked date yet — those will be confirmed on the Updates page as soon as the Committee finalises fixtures.</p>
+        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Exact match timings within each date will be published on the Fixtures &amp; Results page as the Committee finalises them.</p>
       </div>
     </div>
     <section class="wrap">
@@ -1294,7 +1294,7 @@ async function renderContact(){
       <div class="card" style="margin-top:30px;">
         <div class="tag">Venue</div>
         <h3 style="font-size:20px;">Prateek Laurel Apartments</h3>
-        <p>All events are held within the society premises — sports courts, back gate, community hall and grounds. Exact venues are listed on each sport's page.</p>
+        <p>All events are held within the society premises — courts, the Clubhouse, Central Park, and the Back Gate route. Exact venues are listed on each sport's page.</p>
       </div>
     </section>
   `);
