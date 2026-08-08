@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prateek Laurel Sports Fest 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --maroon:#7C1F2B;
+  --maroon-dark:#5A1520;
+  --gold:#C08A2E;
+  --gold-light:#E3B45C;
+  --cream:#F6F1E6;
+  --cream-dim:#EDE4D3;
+  --ink:#201A17;
+  --green:#2F4A3C;
+  --line:#D8CBB0;
+  --white:#FFFDF9;
+  --radius:2px;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--cream);
+  color:var(--ink);
+  font-family:'Work Sans',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold);color:var(--ink);}
+h1,h2,h3,.display{
+  font-family:'Anton',sans-serif;
+  font-weight:400;
+  text-transform:uppercase;
+  letter-spacing:0.01em;
+  line-height:0.95;
+  margin:0;
+}
+.mono{font-family:'JetBrains Mono',monospace;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+img{max-width:100%;display:block;}
+
+/* ===== Lane divider pattern ===== */
+.lane-rule{
+  height:6px;
+  background:repeating-linear-gradient(90deg,var(--maroon) 0 26px, transparent 26px 34px);
+  opacity:.85;
+}
+.lane-rule.gold{background:repeating-linear-gradient(90deg,var(--gold) 0 26px, transparent 26px 34px);}
+
+/* ===== Topbar / Nav ===== */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:var(--ink);
+  color:var(--cream);
+}
+.topbar-inner{
+  max-width:1180px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;
+}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{width:38px;height:38px;flex:none;}
+.brand-text{display:flex;flex-direction:column;line-height:1;}
+.brand-text .b1{font-family:'Anton';font-size:15px;letter-spacing:.03em;color:var(--gold-light);}
+.brand-text .b2{font-family:'JetBrains Mono';font-size:10px;letter-spacing:.14em;color:#C9BFA9;margin-top:3px;}
+nav.mainnav{display:flex;gap:2px;flex-wrap:wrap;}
+nav.mainnav a{
+  font-family:'JetBrains Mono';font-size:12px;letter-spacing:.08em;
+  padding:9px 12px;color:#D8CFBE;border-bottom:2px solid transparent;
+  transition:.15s;white-space:nowrap;
+}
+nav.mainnav a:hover{color:var(--gold-light);}
+nav.mainnav a.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+.nav-toggle{display:none;background:none;border:1px solid #4a413a;color:var(--cream);padding:8px 10px;}
+@media(max-width:940px){
+  nav.mainnav{display:none;position:absolute;top:100%;left:0;right:0;background:var(--ink);flex-direction:column;padding:6px 12px 14px;border-top:1px solid #3a322c;}
+  nav.mainnav.open{display:flex;}
+  nav.mainnav a{padding:11px 6px;border-bottom:1px solid #322b25;}
+  .nav-toggle{display:block;}
+}
+
+/* ===== Ticker ===== */
+.ticker-wrap{
+  background:var(--maroon);color:var(--white);
+  display:flex;align-items:stretch;overflow:hidden;
+  border-bottom:1px solid var(--maroon-dark);
+}
+.ticker-label{
+  flex:none;background:var(--gold);color:var(--ink);
+  font-family:'JetBrains Mono';font-size:11px;font-weight:700;letter-spacing:.1em;
+  padding:8px 14px;display:flex;align-items:center;gap:6px;
+}
+.ticker-track{flex:1;overflow:hidden;position:relative;white-space:nowrap;display:flex;align-items:center;}
+.ticker-move{display:inline-flex;padding-left:100%;animation:tickmove 32s linear infinite;}
+.ticker-move:hover{animation-play-state:paused;}
+@keyframes tickmove{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+.ticker-item{
+  font-family:'JetBrains Mono';font-size:12.5px;padding:8px 34px 8px 0;cursor:pointer;
+  border-right:1px dashed rgba(255,255,255,.25);margin-right:34px;
+}
+.ticker-item:hover{color:var(--gold-light);}
+.ticker-tag{color:var(--gold-light);margin-right:8px;}
+
+/* ===== Layout helpers ===== */
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px;}
+section{padding:64px 0;}
+.eyebrow{
+  font-family:'JetBrains Mono';font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--maroon);display:flex;align-items:center;gap:10px;margin-bottom:14px;
+}
+.eyebrow::before{content:'';width:22px;height:2px;background:var(--gold);}
+.h-xl{font-size:clamp(40px,7vw,84px);}
+.h-lg{font-size:clamp(30px,4.5vw,52px);}
+.h-md{font-size:clamp(22px,3vw,30px);}
+.sub{font-size:17px;line-height:1.65;color:#4a4139;max-width:640px;}
+
+/* ===== Hero ===== */
+.hero{
+  position:relative;background:var(--ink);color:var(--cream);overflow:hidden;
+  padding:0;
+}
+.hero-inner{max-width:1180px;margin:0 auto;padding:76px 20px 60px;position:relative;z-index:2;}
+.hero-dates{
+  display:inline-flex;align-items:center;gap:10px;font-family:'JetBrains Mono';
+  font-size:13px;letter-spacing:.08em;color:var(--gold-light);border:1px solid #4a413a;
+  padding:7px 14px;margin-bottom:26px;
+}
+.hero h1{color:var(--white);}
+.hero h1 .accent{color:var(--gold);}
+.hero-lede{max-width:560px;color:#C9BFA9;font-size:17px;line-height:1.7;margin-top:22px;}
+.hero-ctas{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap;}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 26px;font-family:'JetBrains Mono';font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid transparent;transition:.15s;
+}
+.btn-primary{background:var(--gold);color:var(--ink);font-weight:700;}
+.btn-primary:hover{background:var(--gold-light);}
+.btn-outline{border-color:#5a514a;color:var(--cream);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold-light);}
+.btn-dark{background:var(--ink);color:var(--cream);}
+.btn-dark:hover{background:var(--maroon);}
+.btn-sm{padding:9px 16px;font-size:11px;}
+.hero-track{position:absolute;bottom:0;left:0;right:0;height:120px;opacity:.5;}
+.wreath-decor{position:absolute;right:-40px;top:-40px;width:420px;height:420px;opacity:.14;z-index:1;}
+
+/* ===== Cards ===== */
+.grid{display:grid;gap:22px;}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+@media(max-width:900px){.grid-3,.grid-4{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.card{
+  background:var(--white);border:1px solid var(--line);padding:26px;
+  transition:.18s;position:relative;
+}
+.card:hover{border-color:var(--maroon);transform:translateY(-2px);box-shadow:0 10px 24px rgba(32,26,23,.08);}
+.card .tag{font-family:'JetBrains Mono';font-size:10.5px;letter-spacing:.1em;color:var(--maroon);text-transform:uppercase;}
+.card h3{font-size:24px;margin-top:8px;}
+.card p{color:#5a5148;font-size:14.5px;line-height:1.55;margin-top:10px;}
+.sport-card{cursor:pointer;}
+.sport-card .meta{display:flex;gap:14px;margin-top:14px;font-family:'JetBrains Mono';font-size:11px;color:#8a7f6e;flex-wrap:wrap;}
+.sport-card .meta span{display:flex;align-items:center;gap:5px;}
+
+.badge{
+  display:inline-block;font-family:'JetBrains Mono';font-size:10px;letter-spacing:.08em;
+  padding:4px 9px;border:1px solid currentColor;text-transform:uppercase;
+}
+.badge.gold{color:var(--gold);}
+.badge.maroon{color:var(--maroon);}
+.badge.green{color:var(--green);}
+.badge.grey{color:#8a7f6e;}
+
+/* ===== Timeline ===== */
+.timeline{position:relative;margin-top:40px;padding-left:28px;border-left:2px solid var(--line);}
+.tl-item{position:relative;padding-bottom:34px;}
+.tl-item:last-child{padding-bottom:0;}
+.tl-dot{position:absolute;left:-34px;top:2px;width:14px;height:14px;background:var(--maroon);border:3px solid var(--cream);border-radius:50%;box-shadow:0 0 0 2px var(--maroon);}
+.tl-date{font-family:'JetBrains Mono';font-size:11.5px;color:var(--maroon);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+.tl-item h4{font-family:'Anton';font-size:19px;text-transform:uppercase;}
+.tl-item p{color:#5a5148;font-size:14px;margin-top:5px;max-width:560px;}
+
+/* ===== Footer ===== */
+footer{background:var(--ink);color:#C9BFA9;padding:52px 0 26px;margin-top:40px;}
+footer h4{color:var(--gold-light);font-family:'JetBrains Mono';font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;}
+footer .fgrid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;}
+@media(max-width:700px){footer .fgrid{grid-template-columns:1fr;}}
+footer a.flink{display:block;padding:5px 0;font-size:13.5px;color:#C9BFA9;}
+footer a.flink:hover{color:var(--gold-light);}
+.footer-bottom{border-top:1px solid #3a322c;margin-top:36px;padding-top:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;color:#8a7f6e;}
+.footer-bottom a{color:#8a7f6e;}
+.footer-bottom a:hover{color:var(--gold-light);}
+
+/* ===== Forms ===== */
+.field{margin-bottom:18px;}
+.field label{display:block;font-family:'JetBrains Mono';font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--maroon);margin-bottom:7px;}
+.field .hint{font-size:12px;color:#8a7f6e;margin-top:5px;}
+input[type=text],input[type=number],input[type=tel],input[type=email],input[type=password],select,textarea,input[type=date],input[type=time],input[type=url]{
+  width:100%;padding:12px 13px;border:1px solid var(--line);background:var(--white);
+  font-family:'Work Sans';font-size:14.5px;color:var(--ink);
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--maroon);outline-offset:1px;border-color:var(--maroon);}
+textarea{resize:vertical;min-height:90px;}
+.form-card{background:var(--white);border:1px solid var(--line);padding:34px;max-width:680px;}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:600px){.form-grid-2{grid-template-columns:1fr;}}
+.upload-box{border:1.5px dashed var(--line);padding:22px;text-align:center;background:var(--cream-dim);cursor:pointer;}
+.upload-box:hover{border-color:var(--maroon);}
+.upload-box.has-img{padding:14px;}
+.qr-box{background:var(--white);border:1px solid var(--line);padding:20px;text-align:center;}
+.msg-banner{padding:14px 18px;font-size:14px;margin-bottom:20px;border-left:4px solid;}
+.msg-banner.ok{background:#EAF3EC;border-color:var(--green);color:#1f3a2c;}
+.msg-banner.err{background:#F7E8E4;border-color:#B0463C;color:#6b2a22;}
+.msg-banner.info{background:#F1EADB;border-color:var(--gold);color:#5c4713;}
+
+/* ===== Table / list rows ===== */
+.data-row{display:grid;grid-template-columns:120px 1fr auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line);}
+@media(max-width:700px){.data-row{grid-template-columns:1fr;gap:8px;}}
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px;}
+.filter-bar select,.filter-bar input{width:auto;min-width:160px;}
+.pill-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px;}
+.pill{padding:8px 16px;border:1px solid var(--line);font-family:'JetBrains Mono';font-size:11.5px;letter-spacing:.05em;background:var(--white);text-transform:uppercase;}
+.pill.active{background:var(--maroon);color:var(--white);border-color:var(--maroon);}
+
+/* ===== Section headers with dividers ===== */
+.section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:36px;gap:20px;flex-wrap:wrap;}
+
+/* ===== Rules content ===== */
+.rules-block h4{font-family:'Anton';font-size:16px;text-transform:uppercase;color:var(--maroon);margin:26px 0 10px;letter-spacing:.02em;}
+.rules-block h4:first-child{margin-top:0;}
+.rules-block ul{margin:0 0 14px;padding-left:20px;}
+.rules-block li{margin-bottom:6px;font-size:14.5px;line-height:1.6;color:#3a332c;}
+.rules-block table{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:13.5px;}
+.rules-block th,.rules-block td{border:1px solid var(--line);padding:8px 10px;text-align:left;}
+.rules-block th{background:var(--cream-dim);font-family:'JetBrains Mono';font-size:11px;text-transform:uppercase;letter-spacing:.05em;}
+.rules-block p{font-size:14.5px;line-height:1.6;color:#3a332c;}
+
+/* ===== Detail page hero band ===== */
+.detail-band{background:var(--maroon);color:var(--white);padding:52px 0 40px;}
+.detail-band .badge{border-color:var(--gold-light);color:var(--gold-light);}
+.back-link{font-family:'JetBrains Mono';font-size:12px;letter-spacing:.06em;color:var(--gold-light);display:inline-flex;align-items:center;gap:6px;margin-bottom:18px;}
+.back-link:hover{color:var(--white);}
+
+/* Sponsor tiers */
+.sponsor-tier-head{display:flex;align-items:center;gap:14px;margin:44px 0 20px;}
+.sponsor-tier-head:first-child{margin-top:0;}
+.sponsor-tier-head .line{flex:1;height:1px;background:var(--line);}
+.sponsor-card{background:var(--white);border:1px solid var(--line);padding:22px;text-align:center;}
+.sponsor-card .logo-fallback{width:56px;height:56px;margin:0 auto 12px;background:var(--maroon);color:var(--white);display:flex;align-items:center;justify-content:center;font-family:'Anton';font-size:20px;}
+
+/* Admin */
+.admin-shell{display:grid;grid-template-columns:220px 1fr;min-height:70vh;gap:0;border:1px solid var(--line);background:var(--white);}
+@media(max-width:800px){.admin-shell{grid-template-columns:1fr;}}
+.admin-sidenav{background:var(--ink);color:var(--cream);padding:22px 0;}
+.admin-sidenav button{display:block;width:100%;text-align:left;background:none;border:none;color:#C9BFA9;padding:12px 22px;font-family:'JetBrains Mono';font-size:12px;letter-spacing:.06em;text-transform:uppercase;border-left:3px solid transparent;}
+.admin-sidenav button:hover{color:var(--gold-light);}
+.admin-sidenav button.active{color:var(--gold-light);border-left-color:var(--gold);background:rgba(255,255,255,.04);}
+.admin-main{padding:34px;}
+.admin-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
+.reg-item{border:1px solid var(--line);padding:18px;margin-bottom:14px;}
+.reg-item .rtop{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:flex-start;}
+.reg-item .rname{font-family:'Anton';font-size:18px;text-transform:uppercase;}
+.reg-item .rmeta{font-family:'JetBrains Mono';font-size:11.5px;color:#8a7f6e;margin-top:4px;}
+.reg-item .ractions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.btn-approve{background:var(--green);color:var(--white);padding:8px 16px;border:none;font-family:'JetBrains Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
+.btn-reject{background:#B0463C;color:var(--white);padding:8px 16px;border:none;font-family:'JetBrains Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
+.btn-del{background:transparent;color:#B0463C;padding:8px 16px;border:1px solid #B0463C;font-family:'JetBrains Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
+.btn-ghost{background:transparent;color:var(--ink);padding:8px 16px;border:1px solid var(--line);font-family:'JetBrains Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
+.thumb-link{font-family:'JetBrains Mono';font-size:11px;color:var(--maroon);text-decoration:underline;cursor:pointer;}
+.player-id-tag{font-family:'JetBrains Mono';background:var(--gold);color:var(--ink);padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:.05em;}
+.empty-state{text-align:center;padding:60px 20px;color:#8a7f6e;}
+.empty-state .em-icon{font-size:40px;margin-bottom:14px;}
+.loading-dots{font-family:'JetBrains Mono';color:#8a7f6e;padding:40px;text-align:center;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(20,16,13,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:var(--white);max-width:480px;width:100%;padding:30px;max-height:88vh;overflow:auto;}
+.modal-box img{width:100%;border:1px solid var(--line);margin-top:12px;}
+.close-x{float:right;background:none;border:none;font-size:20px;color:var(--ink);cursor:pointer;}
+.stat-row{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:10px;}
+.stat-box{background:var(--cream-dim);border:1px solid var(--line);padding:16px 20px;min-width:120px;}
+.stat-box .n{font-family:'Anton';font-size:30px;color:var(--maroon);}
+.stat-box .l{font-family:'JetBrains Mono';font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#8a7f6e;margin-top:4px;}
+@media print{.topbar,.ticker-wrap,footer,.no-print{display:none;}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* =========================================================
+   PRATEEK LAUREL SPORTS FEST 2026 — SITE ENGINE
+   ========================================================= */
+
+/* ---------- Supabase client ----------
+   Fill these in from Supabase Dashboard → Project Settings → API,
+   then redeploy. See README.md for the full setup walkthrough. */
+const SUPABASE_URL = 'https://dthbsvdvjjtdwfrjsaga.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aGJzdmR2amp0ZHdmcmpzYWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU2OTgsImV4cCI6MjEwMTc5MTY5OH0.QWyLlSNBf7shrTn76jUHxF_pyil28g2kWlsOMgJDlD0';
+const CONFIG_READY = !SUPABASE_URL.startsWith('YOUR_') && !SUPABASE_ANON_KEY.startsWith('YOUR_');
+// Falls back to a harmless placeholder URL when not yet configured, so the
+// Supabase client library doesn't throw at load time — render() below shows
+// a friendly "add your keys" screen instead of a blank/broken page.
+const sb = window.supabase.createClient(
+  CONFIG_READY ? SUPABASE_URL : 'https://placeholder.supabase.co',
+  CONFIG_READY ? SUPABASE_ANON_KEY : 'placeholder-anon-key'
+);
+
+function uid(prefix){
+  return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
+}
+
+/* ---------- Generic table helpers ---------- */
+async function tFetchAll(table, orderCol, ascending){
+  const {data, error} = await sb.from(table).select('*').order(orderCol||'id', {ascending: !!ascending});
+  if(error){ console.error(table, error); return []; }
+  return data || [];
+}
+async function tInsert(table, row){
+  const {data, error} = await sb.from(table).insert(row).select().single();
+  if(error){ console.error(table, error); return {ok:false, error}; }
+  return {ok:true, data};
+}
+async function tUpdate(table, id, patch){
+  const {data, error} = await sb.from(table).update(patch).eq('id', id).select().single();
+  if(error){ console.error(table, error); return {ok:false, error}; }
+  return {ok:true, data};
+}
+async function tDelete(table, id){
+  const {error} = await sb.from(table).delete().eq('id', id);
+  if(error){ console.error(table, error); return false; }
+  return true;
+}
+
+/* ---------- Settings (UPI id) ---------- */
+const DEFAULT_SETTINGS = { upiId:'' };
+async function getSettings(){
+  const {data, error} = await sb.from('settings').select('*').eq('id','main').single();
+  if(error || !data) return DEFAULT_SETTINGS;
+  return { upiId: data.upi_id || '' };
+}
+async function saveSettings(patch){
+  const {error} = await sb.from('settings').update({upi_id: patch.upiId, updated_at: new Date().toISOString()}).eq('id','main');
+  if(error) console.error(error);
+  return getSettings();
+}
+
+/* ---------- Admin auth (real Supabase Auth — email + password) ---------- */
+async function adminSignIn(email, password){
+  const {data, error} = await sb.auth.signInWithPassword({email, password});
+  return {ok: !error, error, data};
+}
+async function adminSignOut(){ await sb.auth.signOut(); }
+async function currentAdminSession(){
+  const {data} = await sb.auth.getSession();
+  return data.session || null;
+}
+
+/* ---------- Image handling: compress, then upload to Storage ---------- */
+function compressImageToBlob(file, maxW=900, quality=0.62){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w=img.width, h=img.height;
+        if(w>maxW){ h = Math.round(h*(maxW/w)); w = maxW; }
+        const canvas = document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img,0,0,w,h);
+        canvas.toBlob(blob=>{
+          if(!blob){ reject(new Error('toBlob failed')); return; }
+          resolve({blob, dataUrl: canvas.toDataURL('image/jpeg', quality)});
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+// Uploads a compressed image to the given bucket, returns the storage path.
+async function uploadImage(bucket, file, prefix){
+  const {blob} = await compressImageToBlob(file, bucket==='payment-screenshots'?1100:900, bucket==='payment-screenshots'?0.7:0.65);
+  const path = `${prefix||'img'}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
+  const {error} = await sb.storage.from(bucket).upload(path, blob, {contentType:'image/jpeg'});
+  if(error){ console.error('upload failed', error); return null; }
+  return path;
+}
+function publicUrl(bucket, path){
+  if(!path) return null;
+  const {data} = sb.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+async function signedUrl(bucket, path, seconds){
+  if(!path) return null;
+  const {data, error} = await sb.storage.from(bucket).createSignedUrl(path, seconds||600);
+  if(error){ console.error(error); return null; }
+  return data.signedUrl;
+}
+
+/* ---------- Formatting helpers ---------- */
+function fmtDate(d){
+  if(!d) return 'TBA';
+  try{
+    const dt = d.includes('T') ? new Date(d) : new Date(d+'T00:00:00');
+    return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  }catch(e){ return d; }
+}
+function fmtDateTime(iso){
+  try{ const dt = new Date(iso); return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' · ' + dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return iso; }
+}
+function esc(str){
+  const d = document.createElement('div'); d.innerText = (str==null?'':str); return d.innerHTML;
+}
+function toast(msg, type){
+  const el = document.getElementById('toast-host');
+  const t = document.createElement('div');
+  t.className = 'msg-banner ' + (type||'info');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:999;max-width:340px;box-shadow:0 10px 30px rgba(0,0,0,.25);background:var(--white);animation:fadeUp .25s ease;';
+  t.innerText = msg;
+  el.appendChild(t);
+  setTimeout(()=>t.remove(), 3800);
+}
+</script>
+<script>
+/* =========================================================
+   STATIC CONTENT — SPORTS, RULES, REGISTRATION CONFIG
+   ========================================================= */
+
+const CONTACTS = [
+  {name:'Rahul', phone:'9313309503'},
+  {name:'Tarun', phone:'9910399636'},
+  {name:'Kapil', phone:'9910763366'}
+];
+
+const SPORTS = [
+
+{
+  id:'freedom-run', name:'Freedom Run', short:'5K Marathon', icon:'🏃',
+  dateLabel:'15 Aug · 5:45 AM', venue:'Society Back Gate', feeLabel:'Free — on the spot',
+  tagline:'A 5 km run to kick off Independence week and the whole Sports Fest.',
+  registration:{ mode:'onspot' },
+  rulesHtml:`
+    <h4>Schedule on the day</h4>
+    <table><tr><th>Time</th><th>What happens</th></tr>
+    <tr><td>5:15 AM</td><td>Reporting time</td></tr>
+    <tr><td>5:20 AM</td><td>T-shirt distribution begins (while stock lasts)</td></tr>
+    <tr><td>5:30 AM</td><td>Warm-up</td></tr>
+    <tr><td>5:45 AM</td><td>Run starts</td></tr></table>
+    <h4>Good to know</h4>
+    <ul>
+      <li>Venue: Society Back Gate</li>
+      <li>Distance: 5 km, hydration points available on the route</li>
+      <li>Free for all residents — no registration fee</li>
+      <li>Registrations are taken on the spot on the day of the run</li>
+      <li>Marathon T-shirts given out from 5:20 AM, first-come-first-served until stock lasts</li>
+      <li>Top 5 runners will receive awards</li>
+    </ul>
+    <p>Route map will be shared closer to the date on the Updates page.</p>
+  `
+},
+
+{
+  id:'field-games', name:'Field Games', short:'Kids · Track & Field', icon:'🏅',
+  dateLabel:'15 Aug · after Flag Hoisting', venue:'Society Grounds', feeLabel:'Free',
+  tagline:'50m Race, Relay Race and Long Jump for kids — boys and girls compete separately.',
+  registration:{
+    mode:'form',
+    categories:[{id:'boys',label:'Boys'},{id:'girls',label:'Girls'}],
+    events:[
+      {id:'50m', label:'50m Race', teamSize:1, fee:0},
+      {id:'relay', label:'Relay Race (3 per team)', teamSize:3, fee:0},
+      {id:'longjump', label:'Long Jump', teamSize:1, fee:0}
+    ]
+  },
+  rulesHtml:`
+    <h4>Events</h4>
+    <ul>
+      <li>50m Race — Girls and Boys separate categories</li>
+      <li>Relay Race — 3 person team — Girls and Boys separate categories</li>
+      <li>Long Jump — Girls and Boys separate categories</li>
+    </ul>
+    <h4>Registration</h4>
+    <ul>
+      <li>Only Name, Age, Gender, Phone Number and Flat Number needed</li>
+      <li>No registration fees</li>
+    </ul>
+    <h4>Awards</h4>
+    <ul>
+      <li>Awards for winners and runners-up</li>
+      <li>Participation certificates for all</li>
+    </ul>
+    <p>On-the-spot challenges for other society members — skipping, max push-ups, planks and more — will also run alongside Field Games.</p>
+  `
+},
+
+{
+  id:'basketball', name:'3+1 Basketball', short:'Half-court · 3v3', icon:'🏀',
+  dateLabel:'16 Aug', venue:'Basketball Court', feeLabel:'₹600 per team',
+  tagline:'Half-court 3-vs-3 basketball with one substitute, across U10, U14 and Open categories.',
+  registration:{
+    mode:'form',
+    categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
+    events:[{id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, fee:600}],
+    genderField:true
+  },
+  rulesHtml:`
+    <h4>Categories</h4>
+    <p>Under 10, Under 14, and Open — separate competitions for Boys and Girls.</p>
+    <h4>Team composition</h4>
+    <ul>
+      <li>3 playing members + 1 substitute per team</li>
+      <li>Only registered players are eligible; team changes after registration are not permitted</li>
+    </ul>
+    <h4>Match format</h4>
+    <ul>
+      <li>Half-court, 3 vs 3, one substitute per team</li>
+      <li>Separate fixtures for Boys and Girls in each applicable age category</li>
+    </ul>
+    <h4>Match duration — 20 minutes total</h4>
+    <table><tr><th>Period</th><th>Duration</th></tr>
+    <tr><td>1st Quarter</td><td>5 min</td></tr><tr><td>Break</td><td>1 min</td></tr>
+    <tr><td>2nd Quarter</td><td>5 min</td></tr><tr><td>Half Time</td><td>5 min</td></tr>
+    <tr><td>3rd Quarter</td><td>5 min</td></tr><tr><td>Break</td><td>1 min</td></tr>
+    <tr><td>4th Quarter</td><td>5 min</td></tr></table>
+    <h4>Scoring</h4>
+    <ul><li>Basket inside the 3-point arc: 2 points</li><li>Basket outside the 3-point arc: 3 points</li></ul>
+    <h4>Overtime</h4>
+    <p>A tied match goes to a maximum 2-minute overtime. If still tied, the winner is decided as per the format set by the Sports Committee.</p>
+    <h4>Rules</h4>
+    <ul>
+      <li>Follows the Official FIBA Rule Book, with the modifications in this handbook</li>
+      <li>No time-outs allowed</li>
+      <li>Anything not covered here follows applicable FIBA rules; the referee's decision is final</li>
+    </ul>
+    <h4>Reporting &amp; registration</h4>
+    <ul><li>Only registered players may participate</li><li>Teams must report before their scheduled match — late teams may be declared a walkover</li>
+    <li>Fixtures will be published by the Sports Committee</li></ul>
+    <h4>Dress &amp; refreshments</h4>
+    <ul><li>Tournament bibs provided by organisers must be worn</li><li>Drinking water and Fast&amp;Up energy drink provided</li></ul>
+    <h4>Awards</h4>
+    <ul>
+      <li>Team: 🥇 Winner, 🥈 Runner-up</li>
+      <li>Individual: MVP, Best Defensive Player, Best Offensive Player, Best Emerging Player, Fair Play Award</li>
+      <li>Participation certificates for all</li>
+    </ul>
+    <h4>Fan shooting contest</h4>
+    <p>A separate contest for spectators — 2-point and 3-point shooting challenges, with prizes for winners.</p>
+    <h4>General</h4>
+    <p>Participants follow the instructions of referees, officials and the Sports Committee. Misconduct or unsporting behaviour may lead to disciplinary action or disqualification. The Committee can modify the schedule; anything not covered here is decided by the Committee. Taking part means accepting these rules.</p>
+  `
+},
+
+{
+  id:'lawn-tennis', name:'Lawn Tennis', short:'Singles & Doubles', icon:'🎾',
+  dateLabel:'16–31 Aug · date TBA', venue:'Society Lawn Tennis Court', feeLabel:'₹300 singles · ₹600 doubles',
+  tagline:"Under-14 doubles plus Open Men's, Women's and Mixed Doubles.",
+  registration:{
+    mode:'form',
+    categories:[{id:'u14',label:'Under 14 (doubles only)'},{id:'open',label:'Open'}],
+    events:[
+      {id:'singles', label:"Singles — Men's / Women's (Open only)", teamSize:1, fee:300},
+      {id:'doubles', label:'Doubles (Mixed allowed in Open)', teamSize:2, fee:600}
+    ],
+    genderField:true
+  },
+  rulesHtml:`
+    <h4>Categories &amp; events</h4>
+    <table><tr><th>Category</th><th>Event</th></tr>
+    <tr><td>Under 14</td><td>Doubles</td></tr>
+    <tr><td>Open</td><td>Men's Singles</td></tr>
+    <tr><td>Open</td><td>Women's Singles</td></tr>
+    <tr><td>Open</td><td>Doubles — Mixed Doubles allowed</td></tr></table>
+    <h4>Registration fees</h4>
+    <ul><li>Singles: ₹300 per person</li><li>Doubles: ₹600 per team</li><li>60+ participants: Free</li></ul>
+    <h4>Registration</h4>
+    <ul>
+      <li>Under 14 Doubles: 2 players per team, both eligible for Under 14</li>
+      <li>Open Men's / Women's Singles: individual registration</li>
+      <li>Open Doubles: 2 players per team, mixed doubles permitted</li>
+    </ul>
+    <h4>Match rules &amp; format</h4>
+    <p>Standard rules of Lawn Tennis apply, subject to tournament-specific rules in the handbook. Tournament format, scoring and match duration will be decided by the Sports Committee based on registrations and communicated before the competition.</p>
+    <h4>Reporting</h4>
+    <p>Players/teams must report before their scheduled match. Failure to report on time may result in a walkover.</p>
+    <h4>Awards</h4>
+    <p>🥇 Winner, 🥈 Runner-up per event/category, plus participation certificates for all.</p>
+    <h4>General</h4>
+    <p>Only registered participants may play, in the category they registered for. Doubles teams cannot change after registration unless approved by the Committee. The Committee's decisions are final.</p>
+  `
+},
+
+{
+  id:'badminton', name:'Badminton', short:'Singles & Doubles', icon:'🏸',
+  dateLabel:'22–23 Aug', venue:'Badminton Court', feeLabel:'₹300 singles · ₹600 doubles · Free for 60+',
+  tagline:"Men's & Women's Singles, Men's, Women's & Mixed Doubles across four age categories.",
+  registration:{
+    mode:'form',
+    categories:[{id:'7-10',label:'Age 7–10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
+    events:[
+      {id:'ms', label:"Men's Singles", teamSize:1, fee:300},
+      {id:'ws', label:"Women's Singles", teamSize:1, fee:300},
+      {id:'md', label:"Men's Doubles", teamSize:2, fee:600},
+      {id:'wd', label:"Women's Doubles", teamSize:2, fee:600},
+      {id:'xd', label:'Mixed Doubles', teamSize:2, fee:600}
+    ]
+  },
+  rulesHtml:`
+    <h4>Categories</h4><p>Age 7–10, Under 14, Open, 60+ — each with Men's Singles, Women's Singles, Men's Doubles, Women's Doubles and Mixed Doubles.</p>
+    <h4>Registration fees</h4>
+    <ul><li>Singles: ₹300 per person</li><li>Doubles: ₹600 per team</li><li>60+ category: Free</li></ul>
+    <h4>Match rules &amp; format</h4>
+    <p>Standard Badminton rules apply, subject to tournament-specific rules. Format, scoring, games and match duration will be finalised by the Sports Committee based on registrations and announced before the competition.</p>
+    <h4>Reporting</h4>
+    <p>Players/teams report before their scheduled match; late arrival may mean a walkover.</p>
+    <h4>Awards</h4>
+    <p>🥇 Winner, 🥈 Runner-up per event/category, plus participation certificates for all.</p>
+    <h4>General</h4>
+    <p>Only registered participants may play, in their registered category. Doubles pairs cannot change without Committee approval. The Sports Committee's decisions are final.</p>
+  `
+},
+
+{
+  id:'table-tennis', name:'Table Tennis', short:'Singles & Doubles', icon:'🏓',
+  dateLabel:'16–31 Aug · date TBA', venue:'Indoor Games Room', feeLabel:'₹300 singles · ₹600 doubles · Free for 60+',
+  tagline:"Men's & Women's Singles and Doubles across Under 10, Under 14, Open and 60+.",
+  registration:{
+    mode:'form',
+    categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
+    events:[
+      {id:'ms', label:"Men's Singles", teamSize:1, fee:300},
+      {id:'ws', label:"Women's Singles", teamSize:1, fee:300},
+      {id:'md', label:"Men's Doubles", teamSize:2, fee:600},
+      {id:'wd', label:"Women's Doubles", teamSize:2, fee:600}
+    ]
+  },
+  rulesHtml:`
+    <h4>Categories</h4><p>Under 10, Under 14, Open, 60+ — each with Men's Singles, Women's Singles, Men's Doubles and Women's Doubles.</p>
+    <h4>Registration fees</h4>
+    <ul><li>Singles: ₹300 per person</li><li>Doubles: ₹600 per team</li><li>60+ category: Free</li></ul>
+    <h4>Match rules &amp; format</h4>
+    <p>Standard Table Tennis rules apply, subject to tournament-specific rules. Format, scoring and match duration finalised by the Sports Committee and announced before the competition.</p>
+    <h4>Reporting</h4><p>Players/teams report before their scheduled match; late arrival may mean a walkover.</p>
+    <h4>Awards</h4><p>🥇 Winner, 🥈 Runner-up per event/category, plus participation certificates for all.</p>
+    <h4>General</h4><p>Only registered participants may play, in their registered category. Doubles pairs cannot change without Committee approval. The Sports Committee's decisions are final.</p>
+  `
+},
+
+{
+  id:'chess', name:'Chess', short:'Individual', icon:'♟️',
+  dateLabel:'16–31 Aug · date TBA', venue:'Community Hall', feeLabel:'₹300 per person',
+  tagline:'Individual chess competition in Under 10 and Open categories.',
+  registration:{
+    mode:'form',
+    categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'}],
+    events:[{id:'chess', label:'Chess', teamSize:1, fee:300}]
+  },
+  rulesHtml:`
+    <h4>Categories</h4><p>Under 10 and Open.</p>
+    <h4>Registration fee</h4><p>₹300 per person, individual registration.</p>
+    <h4>Format &amp; duration</h4><p>Standard Chess rules apply. Tournament format and time control will be decided by the Sports Committee based on registrations and announced before the competition.</p>
+    <h4>Reporting</h4><p>Participants report before their scheduled match; late arrival may mean a walkover.</p>
+    <h4>Awards</h4><p>🥇 Winner, 🥈 Runner-up per category, plus participation certificates for all.</p>
+    <h4>General</h4><p>Only registered participants may play, in their registered category. The Sports Committee's decisions are final.</p>
+  `
+},
+
+{
+  id:'carrom', name:'Carrom', short:'Singles & Doubles', icon:'⚪',
+  dateLabel:'16–31 Aug · date TBA', venue:'Community Hall', feeLabel:'₹300 singles · ₹600 doubles',
+  tagline:'Singles and doubles carrom in Under 10 and Open categories.',
+  registration:{
+    mode:'form',
+    categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'}],
+    events:[
+      {id:'singles', label:'Singles', teamSize:1, fee:300},
+      {id:'doubles', label:'Doubles', teamSize:2, fee:600}
+    ]
+  },
+  rulesHtml:`
+    <h4>Categories &amp; events</h4><p>Under 10 and Open — Singles (individual) and Doubles (2 players per team).</p>
+    <h4>Registration fees</h4><ul><li>Singles: ₹300 per person</li><li>Doubles: ₹600 per team</li></ul>
+    <h4>Format &amp; duration</h4><p>Standard Carrom rules apply. Format, scoring, boards/rounds and duration finalised by the Sports Committee and announced before the competition.</p>
+    <h4>Reporting</h4><p>Players/teams report before their scheduled match; late arrival may mean a walkover.</p>
+    <h4>Awards</h4><p>🥇 Winner, 🥈 Runner-up per event/category, plus participation certificates for all.</p>
+    <h4>General</h4><p>Only registered participants may play, in their registered category. Doubles teams cannot change without Committee approval. The Sports Committee's decisions are final.</p>
+  `
+},
+
+{
+  id:'pool', name:'Pool', short:'8-Ball · Singles', icon:'🎱',
+  dateLabel:'16–31 Aug · date TBA', venue:'Community Hall', feeLabel:'₹300 per person',
+  tagline:'Open category 8-Ball Pool, individual competition.',
+  registration:{
+    mode:'form',
+    categories:[{id:'open',label:'Open'}],
+    events:[{id:'singles', label:'Singles', teamSize:1, fee:300}]
+  },
+  rulesHtml:`
+    <h4>Category</h4><p>Open, Singles — individual registration.</p>
+    <h4>Registration fee</h4><p>₹300 per person.</p>
+    <h4>Match rules</h4><p>Standard rules of 8-Ball Pool apply, subject to tournament-specific rules. The match official's decision on match administration is final.</p>
+    <h4>Format &amp; duration</h4><p>Format, number of frames and time restrictions decided by the Sports Committee based on registrations and announced before the competition.</p>
+    <h4>Reporting</h4><p>Participants report before their scheduled match; late arrival may mean a walkover.</p>
+    <h4>Awards</h4><p>🥇 Winner, 🥈 Runner-up, plus participation certificates for all.</p>
+    <h4>General</h4><p>Only registered participants may play. The Sports Committee's decisions are final.</p>
+  `
+},
+
+{
+  id:'football', name:'Football', short:'Auction format', icon:'⚽',
+  dateLabel:'16–31 Aug · date TBA', venue:'Society Grounds', feeLabel:'Paid — amount TBA',
+  tagline:'Individual paid registration followed by a player auction to form teams. Full details coming soon.',
+  registration:{ mode:'contact' },
+  rulesHtml:`
+    <h4>Format</h4>
+    <p>Football will run as individual paid registrations, followed by a player auction to draft teams — rather than players registering as pre-formed teams.</p>
+    <h4>What's confirmed so far</h4>
+    <ul><li>Registration is individual and paid (fee amount to be announced)</li><li>Teams will be formed via an auction after registrations close</li></ul>
+    <p>Full rules, fee, dates and auction process will be posted on the Updates page. For now, reach out to the organisers below if you want to be notified as soon as registration opens.</p>
+  `
+}
+];
+
+function getSport(id){ return SPORTS.find(s=>s.id===id); }
+</script>
+<script>
+/* =========================================================
+   APP STATE & ROUTER
+   ========================================================= */
+const STATE = {
+  route:'home',
+  params:{},
+  adminAuthed:false,
+  adminSection:'registrations',
+  regFilter:{status:'pending'},
+  updatesFilter:'all',
+  fixturesFilter:{sport:'all', status:'all'},
+  cache:{ updates:[], fixtures:[], sponsors:[], photos:[], registrations:[], settings:null }
+};
+
+const ROUTES = [
+  ['home',''], ['sports','sports'], ['sport-detail','sport'], ['schedule','schedule'],
+  ['rules','rules'], ['fixtures','fixtures'], ['updates','updates'], ['sponsors','sponsors'],
+  ['contact','contact'], ['register','register'], ['admin','admin']
+];
+
+function parseHash(){
+  const h = (location.hash || '#home').replace('#','');
+  const parts = h.split('/');
+  const route = parts[0] || 'home';
+  const param = parts[1] || null;
+  return {route, param};
+}
+
+function navigate(route, param){
+  location.hash = param ? `#${route}/${param}` : `#${route}`;
+}
+
+window.addEventListener('hashchange', ()=>render());
+
+/* =========================================================
+   SHELL: TOPBAR + TICKER + FOOTER
+   ========================================================= */
+const NAV_ITEMS = [
+  {route:'home', label:'Home'},
+  {route:'sports', label:'Sports'},
+  {route:'schedule', label:'Schedule'},
+  {route:'rules', label:'Rules'},
+  {route:'fixtures', label:'Fixtures & Results'},
+  {route:'updates', label:'Updates'},
+  {route:'sponsors', label:'Sponsors'},
+  {route:'contact', label:'Contact'},
+];
+
+function laurelSVG(cls){
+  return `<svg class="${cls||''}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none">
+    <path d="M50 8 C38 30 30 55 34 88" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    <path d="M50 8 C62 30 70 55 66 88" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    <g stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+      <path d="M35 25 C28 24 23 20 21 15"/><path d="M35 38 C27 38 21 35 18 29"/>
+      <path d="M37 51 C28 52 21 50 17 44"/><path d="M39 64 C30 66 23 65 19 60"/>
+      <path d="M42 77 C33 80 26 80 22 76"/>
+      <path d="M65 25 C72 24 77 20 79 15"/><path d="M65 38 C73 38 79 35 82 29"/>
+      <path d="M63 51 C72 52 79 50 83 44"/><path d="M61 64 C70 66 77 65 81 60"/>
+      <path d="M58 77 C67 80 74 80 78 76"/>
+    </g>
+  </svg>`;
+}
+
+function renderShell(bodyHtml){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="topbar-inner">
+        <a href="#home" class="brand">
+          <span class="brand-mark" style="color:var(--gold-light)">${laurelSVG('')}</span>
+          <span class="brand-text">
+            <span class="b1">Prateek Laurel</span>
+            <span class="b2">Sports Fest 2026</span>
+          </span>
+        </a>
+        <button class="nav-toggle" id="navToggle">☰ Menu</button>
+        <nav class="mainnav" id="mainNav">
+          ${NAV_ITEMS.map(n=>`<a href="#${n.route}" data-route="${n.route}">${n.label}</a>`).join('')}
+          <a href="#register" data-route="register" style="color:var(--gold-light)">Register →</a>
+        </nav>
+      </div>
+    </div>
+    <div id="tickerHost"></div>
+    <main id="mainContent">${bodyHtml}</main>
+    <footer>
+      <div class="wrap">
+        <div class="fgrid">
+          <div>
+            <h4>Prateek Laurel Sports Fest 2026</h4>
+            <p style="max-width:360px;font-size:14px;line-height:1.7;color:#9d9184;">15–31 August 2026 · Prateek Laurel Apartments. A society-wide celebration of running, field games, and indoor &amp; outdoor sport — for every age group, every flat.</p>
+          </div>
+          <div>
+            <h4>Explore</h4>
+            <a class="flink" href="#sports">All Sports</a>
+            <a class="flink" href="#fixtures">Fixtures &amp; Results</a>
+            <a class="flink" href="#updates">Updates</a>
+            <a class="flink" href="#sponsors">Sponsors</a>
+            <a class="flink" href="#register">Register</a>
+          </div>
+          <div>
+            <h4>Organisers</h4>
+            ${CONTACTS.map(c=>`<a class="flink" href="tel:${c.phone}">${c.name} — ${c.phone}</a>`).join('')}
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>© 2026 Prateek Laurel Apartments Sports Committee</span>
+          <a href="#admin">Organiser Login</a>
+        </div>
+      </div>
+    </footer>
+    <div id="toast-host"></div>
+  `;
+  document.querySelectorAll('[data-route]').forEach(a=>{
+    if(a.getAttribute('data-route')===STATE.route) a.classList.add('active');
+  });
+  document.getElementById('navToggle')?.addEventListener('click', ()=>{
+    document.getElementById('mainNav').classList.toggle('open');
+  });
+  renderTicker();
+}
+
+async function renderTicker(){
+  const host = document.getElementById('tickerHost');
+  if(!host) return;
+  let updates = STATE.cache.updates;
+  if(!updates.length) updates = await tFetchAll('updates', 'date', false);
+  updates = updates.sort((a,b)=> new Date(b.date) - new Date(a.date)).slice(0,10);
+  if(!updates.length){ host.innerHTML=''; return; }
+  const items = updates.map(u=>`<span class="ticker-item" data-id="${u.id}"><span class="ticker-tag">${esc((u.category||'update').toUpperCase())}</span>${esc(u.title)}</span>`).join('');
+  host.innerHTML = `
+    <div class="ticker-wrap">
+      <div class="ticker-label">📣 Latest</div>
+      <div class="ticker-track"><div class="ticker-move">${items}${items}</div></div>
+    </div>`;
+  host.querySelectorAll('.ticker-item').forEach(el=>{
+    el.addEventListener('click', ()=> navigate('updates', el.dataset.id));
+  });
+}
+</script>
+<script>
+/* =========================================================
+   PAGE: HOME
+   ========================================================= */
+const TIMELINE = [
+  {date:'15 Aug', title:'Freedom Run — 5K', desc:'5:45 AM start from the Back Gate, open to all, on-spot registration.'},
+  {date:'15 Aug', title:'Flag Hoisting + Field Games', desc:'50m Race, Relay Race and Long Jump for kids, plus on-spot challenges for everyone.'},
+  {date:'16 Aug', title:'3+1 Basketball begins', desc:'League + knockout, U10 / U14 / Open, Boys & Girls.'},
+  {date:'16–31 Aug', title:'Indoor & Outdoor Sports', desc:'Lawn Tennis, Table Tennis, Chess, Carrom, Pool and Football roll out through the fortnight.'},
+  {date:'22–23 Aug', title:'Badminton', desc:'Singles & Doubles across four age categories.'},
+  {date:'31 Aug', title:'Closing & Awards', desc:'Final matches wrap up and the Sports Fest closes out.'},
+];
+
+async function renderHome(){
+  renderShell(`
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-dates">15 — 31 AUGUST 2026 &nbsp;·&nbsp; PRATEEK LAUREL APARTMENTS</div>
+        <h1 class="h-xl">SPORTS FEST<br><span class="accent">2026</span></h1>
+        <p class="hero-lede">Seventeen days. A 5K freedom run, field games for our kids, and a full slate of indoor &amp; outdoor sport — basketball, tennis, badminton, table tennis, chess, carrom, pool and football. One society, on the field together.</p>
+        <div class="hero-ctas">
+          <a href="#register" class="btn btn-primary">Register Now</a>
+          <a href="#schedule" class="btn btn-outline">View Schedule</a>
+        </div>
+      </div>
+      <span class="wreath-decor" style="color:var(--gold)">${laurelSVG('')}</span>
+      <div class="lane-rule gold"></div>
+    </section>
+
+    <section class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Overview</div>
+          <h2 class="h-lg">Every generation.<br>Every court.</h2>
+        </div>
+        <p class="sub">From a sunrise run at the back gate to knockout finals under the floodlights — the Fest is built so there's something for every flat, every age group, whether you're competing or cheering from the sidelines.</p>
+      </div>
+      <div class="grid grid-4" id="homeSportsGrid"></div>
+    </section>
+
+    <section class="wrap">
+      <div class="eyebrow">Fest Timeline</div>
+      <h2 class="h-lg">How the fortnight unfolds</h2>
+      <div class="timeline">
+        ${TIMELINE.map(t=>`
+          <div class="tl-item">
+            <span class="tl-dot"></span>
+            <div class="tl-date">${t.date}</div>
+            <h4>${t.title}</h4>
+            <p>${t.desc}</p>
+          </div>`).join('')}
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="eyebrow">Organising Committee</div>
+      <h2 class="h-lg">Questions? Talk to us.</h2>
+      <div class="grid grid-3" style="margin-top:30px;">
+        ${CONTACTS.map(c=>`
+          <div class="card">
+            <div class="tag">Organiser</div>
+            <h3>${c.name}</h3>
+            <p><a href="tel:${c.phone}" class="mono" style="color:var(--maroon);font-size:15px;">📞 ${c.phone}</a></p>
+          </div>`).join('')}
+      </div>
+    </section>
+  `);
+  const grid = document.getElementById('homeSportsGrid');
+  grid.innerHTML = SPORTS.slice(0,8).map(sportCardHtml).join('');
+  wireSportCards(grid);
+}
+
+function sportCardHtml(s){
+  return `<div class="card sport-card" data-sport="${s.id}">
+    <div class="tag">${s.dateLabel}</div>
+    <h3>${s.icon} ${s.name}</h3>
+    <p>${s.tagline}</p>
+    <div class="meta"><span>📍 ${s.venue}</span><span>💳 ${s.feeLabel}</span></div>
+  </div>`;
+}
+function wireSportCards(scope){
+  scope.querySelectorAll('[data-sport]').forEach(el=>{
+    el.addEventListener('click', ()=> navigate('sport', el.dataset.sport));
+  });
+}
+
+/* =========================================================
+   PAGE: SPORTS INDEX
+   ========================================================= */
+async function renderSportsIndex(){
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <div class="eyebrow" style="color:var(--gold-light)">All Sports</div>
+        <h1 class="h-lg" style="color:var(--white)">Ten events. One fest.</h1>
+      </div>
+    </div>
+    <section class="wrap">
+      <div class="grid grid-3" id="allSportsGrid"></div>
+    </section>
+  `);
+  const grid = document.getElementById('allSportsGrid');
+  grid.innerHTML = SPORTS.map(sportCardHtml).join('');
+  wireSportCards(grid);
+}
+
+/* =========================================================
+   PAGE: SPORT DETAIL (also used by Rules page)
+   ========================================================= */
+async function renderSportDetail(id){
+  const s = getSport(id) || SPORTS[0];
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <a href="#sports" class="back-link">← All Sports</a>
+        <span class="badge">${s.dateLabel}</span>
+        <h1 class="h-lg" style="color:var(--white);margin-top:12px;">${s.icon} ${s.name}</h1>
+        <p style="max-width:600px;color:#EADFC8;margin-top:12px;font-size:15.5px;">${s.tagline}</p>
+        <div class="hero-ctas" style="margin-top:24px;">
+          ${s.registration.mode==='form' ? `<a href="#register/${s.id}" class="btn btn-primary">Register for ${s.name}</a>` : ''}
+          ${s.registration.mode==='onspot' ? `<span class="badge gold">Register on the spot</span>` : ''}
+          ${s.registration.mode==='contact' ? `<a href="#contact" class="btn btn-outline">Contact Organisers</a>` : ''}
+        </div>
+      </div>
+    </div>
+    <section class="wrap" style="max-width:820px;">
+      <div class="grid grid-3" style="margin-bottom:40px;">
+        <div class="card"><div class="tag">Venue</div><h3 style="font-size:18px;">${s.venue}</h3></div>
+        <div class="card"><div class="tag">Date</div><h3 style="font-size:18px;">${s.dateLabel}</h3></div>
+        <div class="card"><div class="tag">Fee</div><h3 style="font-size:18px;">${s.feeLabel}</h3></div>
+      </div>
+      <div class="rules-block">${s.rulesHtml}</div>
+    </section>
+  `);
+}
+
+/* =========================================================
+   PAGE: SCHEDULE
+   ========================================================= */
+async function renderSchedule(){
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <div class="eyebrow" style="color:var(--gold-light)">Schedule</div>
+        <h1 class="h-lg" style="color:var(--white)">15 – 31 August, day by day</h1>
+        <p style="color:#EADFC8;margin-top:10px;max-width:560px;">Several indoor sports don't have a locked date yet — those will be confirmed on the Updates page as soon as the Committee finalises fixtures.</p>
+      </div>
+    </div>
+    <section class="wrap">
+      <div class="timeline">
+        ${SPORTS.map(s=>`
+          <div class="tl-item">
+            <span class="tl-dot"></span>
+            <div class="tl-date">${s.dateLabel}</div>
+            <h4>${s.icon} ${s.name}</h4>
+            <p>${s.venue} · ${s.feeLabel}</p>
+          </div>`).join('')}
+      </div>
+    </section>
+  `);
+}
+
+/* =========================================================
+   PAGE: RULES (index into sport detail rules)
+   ========================================================= */
+async function renderRulesIndex(){
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <div class="eyebrow" style="color:var(--gold-light)">Rulebooks</div>
+        <h1 class="h-lg" style="color:var(--white)">Full rules, by sport</h1>
+      </div>
+    </div>
+    <section class="wrap">
+      <div class="grid grid-3" id="rulesGrid"></div>
+    </section>
+  `);
+  const grid = document.getElementById('rulesGrid');
+  grid.innerHTML = SPORTS.map(s=>`
+    <div class="card sport-card" data-sport="${s.id}">
+      <div class="tag">Rulebook</div>
+      <h3>${s.icon} ${s.name}</h3>
+      <p>${s.tagline}</p>
+    </div>`).join('');
+  wireSportCards(grid);
+}
+</script>
+<script>
+/* =========================================================
+   PAGE: FIXTURES & RESULTS
+   ========================================================= */
+async function renderFixtures(){
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <div class="eyebrow" style="color:var(--gold-light)">Fixtures &amp; Results</div>
+        <h1 class="h-lg" style="color:var(--white)">Who's playing, who won</h1>
+      </div>
+    </div>
+    <section class="wrap">
+      <div class="filter-bar">
+        <select id="fxSportFilter">
+          <option value="all">All sports</option>
+          ${SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+        </select>
+        <select id="fxStatusFilter">
+          <option value="all">All statuses</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div id="fxList"><div class="loading-dots">Loading fixtures…</div></div>
+    </section>
+  `);
+  document.getElementById('fxSportFilter').addEventListener('change', e=>{ STATE.fixturesFilter.sport = e.target.value; renderFxList(); });
+  document.getElementById('fxStatusFilter').addEventListener('change', e=>{ STATE.fixturesFilter.status = e.target.value; renderFxList(); });
+  await renderFxList();
+}
+async function renderFxList(){
+  const host = document.getElementById('fxList');
+  if(!host) return;
+  let list = await tFetchAll('fixtures', 'date', true);
+  STATE.cache.fixtures = list;
+  const {sport, status} = STATE.fixturesFilter;
+  if(sport!=='all') list = list.filter(f=>f.sport_id===sport);
+  if(status!=='all') list = list.filter(f=>f.status===status);
+  list.sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+  if(!list.length){
+    host.innerHTML = `<div class="empty-state"><div class="em-icon">🗓️</div><p>No fixtures posted yet for this filter. Check back soon.</p></div>`;
+    return;
+  }
+  host.innerHTML = list.map(f=>{
+    const sp = getSport(f.sport_id);
+    return `<div class="data-row">
+      <div class="mono" style="font-size:13px;color:var(--maroon);">${fmtDate(f.date)}${f.time?(' · '+f.time):''}</div>
+      <div>
+        <strong style="font-family:'Anton';text-transform:uppercase;font-size:16px;">${sp?sp.icon+' '+sp.name:f.sport_id}</strong>
+        <div style="font-size:13.5px;color:#5a5148;margin-top:3px;">${esc(f.participants_text||'')}</div>
+        <div style="font-size:12.5px;color:#8a7f6e;margin-top:3px;">📍 ${esc(f.venue||'TBA')}</div>
+        ${f.result ? `<div style="margin-top:8px;font-size:13.5px;background:var(--cream-dim);padding:8px 10px;border-left:3px solid var(--gold);"><strong>Result:</strong> ${esc(f.result)}</div>` : ''}
+      </div>
+      <div><span class="badge ${f.status==='completed'?'green':'maroon'}">${f.status}</span></div>
+    </div>`;
+  }).join('');
+}
+
+/* =========================================================
+   PAGE: UPDATES
+   ========================================================= */
+const UPDATE_CATS = ['announcement','schedule-change','result','important-info','photo-highlight'];
+const UPDATE_CAT_LABEL = {
+  'announcement':'Announcement','schedule-change':'Schedule Change','result':'Result',
+  'important-info':'Important Info','photo-highlight':'Photo / Highlight'
+};
+
+async function renderUpdates(highlightId){
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <div class="eyebrow" style="color:var(--gold-light)">Updates</div>
+        <h1 class="h-lg" style="color:var(--white)">Announcements &amp; news</h1>
+      </div>
+    </div>
+    <section class="wrap">
+      <div class="pill-tabs" id="updatePills">
+        <button class="pill active" data-cat="all">All</button>
+        ${UPDATE_CATS.map(c=>`<button class="pill" data-cat="${c}">${UPDATE_CAT_LABEL[c]}</button>`).join('')}
+      </div>
+      <div id="updatesList"><div class="loading-dots">Loading updates…</div></div>
+    </section>
+  `);
+  document.getElementById('updatePills').addEventListener('click', e=>{
+    const btn = e.target.closest('[data-cat]'); if(!btn) return;
+    document.querySelectorAll('#updatePills .pill').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    STATE.updatesFilter = btn.dataset.cat;
+    renderUpdatesList(highlightId);
+  });
+  await renderUpdatesList(highlightId);
+}
+async function renderUpdatesList(highlightId){
+  const host = document.getElementById('updatesList');
+  if(!host) return;
+  let list = await tFetchAll('updates', 'date', false);
+  STATE.cache.updates = list;
+  if(STATE.updatesFilter!=='all') list = list.filter(u=>u.category===STATE.updatesFilter);
+  list.sort((a,b)=> (b.pinned?1:0)-(a.pinned?1:0) || new Date(b.date)-new Date(a.date));
+  if(!list.length){
+    host.innerHTML = `<div class="empty-state"><div class="em-icon">📭</div><p>No updates in this category yet.</p></div>`;
+    return;
+  }
+  host.innerHTML = list.map(u=>`
+    <div class="card" id="upd-${u.id}" style="margin-bottom:16px;${highlightId===u.id?'border-color:var(--gold);box-shadow:0 0 0 3px rgba(192,138,46,.25);':''}">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <span class="badge ${u.category==='result'?'green':(u.category==='schedule-change'?'maroon':'gold')}">${UPDATE_CAT_LABEL[u.category]||u.category}</span>
+        <span class="mono" style="font-size:11.5px;color:#8a7f6e;">${fmtDate(u.date)}</span>
+      </div>
+      <h3 style="margin-top:12px;font-size:20px;">${esc(u.title)}</h3>
+      <p style="white-space:pre-wrap;">${esc(u.body)}</p>
+    </div>`).join('');
+  if(highlightId){
+    const el = document.getElementById('upd-'+highlightId);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+}
+
+/* =========================================================
+   PAGE: SPONSORS
+   ========================================================= */
+const SPONSOR_TIERS = ['title','gold','silver','community'];
+const SPONSOR_TIER_LABEL = {title:'Title Sponsor', gold:'Gold Sponsors', silver:'Silver Sponsors', community:'Community Partners'};
+
+async function renderSponsors(){
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <div class="eyebrow" style="color:var(--gold-light)">Sponsors</div>
+        <h1 class="h-lg" style="color:var(--white)">Backed by our community</h1>
+        <p style="color:#EADFC8;margin-top:10px;max-width:560px;">Want to support the Fest — awards, refreshments, jerseys, or a stall on event day? We'd love to have you.</p>
+        <a href="#contact" class="btn btn-primary" style="margin-top:20px;">Become a Sponsor</a>
+      </div>
+    </div>
+    <section class="wrap" id="sponsorsHost">
+      <div class="loading-dots">Loading sponsors…</div>
+    </section>
+  `);
+  const host = document.getElementById('sponsorsHost');
+  const list = await tFetchAll('sponsors', 'name', true);
+  STATE.cache.sponsors = list;
+  if(!list.length){
+    host.innerHTML = `<div class="empty-state"><div class="em-icon">🤝</div><p>No sponsors listed yet — check back soon, or reach out via Contact to be our first.</p></div>`;
+    return;
+  }
+  let html = '';
+  SPONSOR_TIERS.forEach(tier=>{
+    const items = list.filter(s=>s.tier===tier);
+    if(!items.length) return;
+    html += `<div class="sponsor-tier-head"><h3 class="h-md">${SPONSOR_TIER_LABEL[tier]}</h3><div class="line"></div></div>
+    <div class="grid grid-3">
+      ${items.map(s=>`
+        <div class="sponsor-card">
+          ${s.logo_url ? `<img src="${s.logo_url}" style="width:56px;height:56px;object-fit:contain;margin:0 auto 12px;">` : `<div class="logo-fallback">${esc((s.name||'?')[0])}</div>`}
+          <h3 style="font-size:18px;">${esc(s.name)}</h3>
+          ${s.blurb ? `<p style="font-size:13.5px;color:#5a5148;margin-top:8px;">${esc(s.blurb)}</p>` : ''}
+          ${s.website ? `<a href="${s.website}" target="_blank" style="display:inline-block;margin-top:10px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--maroon);">Visit →</a>` : ''}
+        </div>`).join('')}
+    </div>`;
+  });
+  host.innerHTML = html || `<div class="empty-state"><p>No sponsors listed yet.</p></div>`;
+}
+
+/* =========================================================
+   PAGE: CONTACT
+   ========================================================= */
+async function renderContact(){
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <div class="eyebrow" style="color:var(--gold-light)">Contact</div>
+        <h1 class="h-lg" style="color:var(--white)">Reach the Sports Committee</h1>
+      </div>
+    </div>
+    <section class="wrap">
+      <div class="grid grid-3">
+        ${CONTACTS.map(c=>`
+          <div class="card">
+            <div class="tag">Organiser</div>
+            <h3>${c.name}</h3>
+            <p style="margin-top:12px;">
+              <a href="tel:${c.phone}" class="mono" style="color:var(--maroon);font-size:16px;display:block;">📞 ${c.phone}</a>
+              <a href="https://wa.me/91${c.phone}" target="_blank" class="mono" style="color:var(--green);font-size:13px;display:block;margin-top:8px;">💬 WhatsApp</a>
+            </p>
+          </div>`).join('')}
+      </div>
+      <div class="card" style="margin-top:30px;">
+        <div class="tag">Venue</div>
+        <h3 style="font-size:20px;">Prateek Laurel Apartments</h3>
+        <p>All events are held within the society premises — sports courts, back gate, community hall and grounds. Exact venues are listed on each sport's page.</p>
+      </div>
+    </section>
+  `);
+}
+</script>
+<script>
+/* =========================================================
+   PAGE: REGISTER
+   ========================================================= */
+let REG_UPLOAD_FILE = null;    // holds the raw File for upload on submit
+let REG_UPLOAD_PREVIEW = null; // holds a base64 preview only, for display
+
+async function renderRegister(preSportId){
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <div class="eyebrow" style="color:var(--gold-light)">Register</div>
+        <h1 class="h-lg" style="color:var(--white)">Sign up for an event</h1>
+        <p style="color:#EADFC8;margin-top:10px;max-width:560px;">Fill the form, pay if there's a fee, and upload your payment screenshot. Organisers verify each payment before your Player ID is issued.</p>
+      </div>
+    </div>
+    <section class="wrap">
+      <div class="grid" style="grid-template-columns:1fr;max-width:900px;gap:36px;">
+        <div class="form-card" style="max-width:none;">
+          <div class="field">
+            <label>1. Choose your sport</label>
+            <select id="regSportSelect">
+              <option value="">— Select a sport —</option>
+              ${SPORTS.filter(s=>s.registration.mode!=='onspot').map(s=>`<option value="${s.id}">${s.icon} ${s.name}</option>`).join('')}
+            </select>
+          </div>
+          <div id="regDynamicArea"></div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:20px;">
+            <div class="tag">Already registered?</div>
+            <h3 style="font-size:18px;">Check your status</h3>
+            <p style="margin-bottom:14px;">Look up your registration using the phone number you registered with.</p>
+            <div class="field" style="margin-bottom:10px;"><input type="tel" id="statusPhoneInput" placeholder="10-digit phone number"></div>
+            <button class="btn btn-dark btn-sm" id="statusCheckBtn">Check Status</button>
+            <div id="statusResult" style="margin-top:16px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  `);
+  const sel = document.getElementById('regSportSelect');
+  sel.addEventListener('change', ()=> renderRegDynamic(sel.value));
+  document.getElementById('statusCheckBtn').addEventListener('click', checkRegStatus);
+  if(preSportId){ sel.value = preSportId; renderRegDynamic(preSportId); }
+}
+
+function renderRegDynamic(sportId){
+  const area = document.getElementById('regDynamicArea');
+  REG_UPLOAD_FILE = null; REG_UPLOAD_PREVIEW = null;
+  if(!sportId){ area.innerHTML=''; return; }
+  const s = getSport(sportId);
+  if(s.registration.mode==='contact'){
+    area.innerHTML = `<div class="msg-banner info" style="margin-top:20px;">Registration for ${s.name} isn't open yet — full details are coming soon. Contact the organisers to be notified first.</div>
+    <a href="#contact" class="btn btn-outline btn-sm">Go to Contact</a>`;
+    return;
+  }
+  const cfg = s.registration;
+  area.innerHTML = `
+    <div class="field">
+      <label>2. Category</label>
+      <select id="regCategory">${cfg.categories.map(c=>`<option value="${c.id}">${c.label}</option>`).join('')}</select>
+    </div>
+    <div class="field">
+      <label>3. Event</label>
+      <select id="regEvent">${cfg.events.map(e=>`<option value="${e.id}">${e.label}</option>`).join('')}</select>
+    </div>
+    ${cfg.genderField ? `<div class="field"><label>Gender Category</label><select id="regGenderCat"><option value="boys">Boys / Men</option><option value="girls">Girls / Women</option></select></div>` : ''}
+    <div id="regParticipants"></div>
+    <div class="form-grid-2">
+      <div class="field"><label>Contact Phone Number</label><input type="tel" id="regPhone" placeholder="10-digit mobile number" required></div>
+      <div class="field"><label>Flat Number</label><input type="text" id="regFlat" placeholder="e.g. B-1204" required></div>
+    </div>
+    <div id="regPaymentArea"></div>
+    <div id="regMsgArea"></div>
+    <button class="btn btn-primary" id="regSubmitBtn" style="width:100%;justify-content:center;margin-top:10px;">Submit Registration</button>
+  `;
+  document.getElementById('regCategory').addEventListener('change', ()=>updateRegForm(sportId));
+  document.getElementById('regEvent').addEventListener('change', ()=>updateRegForm(sportId));
+  updateRegForm(sportId);
+  document.getElementById('regSubmitBtn').addEventListener('click', ()=>submitRegistration(sportId));
+}
+
+function currentEventConfig(sportId){
+  const s = getSport(sportId);
+  const evId = document.getElementById('regEvent').value;
+  return s.registration.events.find(e=>e.id===evId) || s.registration.events[0];
+}
+
+async function updateRegForm(sportId){
+  const s = getSport(sportId);
+  const ev = currentEventConfig(sportId);
+  const catSel = document.getElementById('regCategory');
+  const isFree = ev.fee===0 || catSel.value==='60+';
+  const teamSize = ev.teamSize;
+
+  const pWrap = document.getElementById('regParticipants');
+  let fields = '';
+  if(teamSize>1){
+    fields += `<div class="field"><label>Team Name</label><input type="text" id="regTeamName" placeholder="Give your team a name"></div>`;
+  }
+  for(let i=0;i<teamSize;i++){
+    fields += `
+      <div class="field-group" style="border:1px solid var(--line);padding:14px;margin-bottom:14px;background:var(--cream-dim);">
+        <label style="margin-bottom:10px;">${teamSize>1?('Player '+(i+1)):'Participant'} Details</label>
+        <div class="form-grid-2">
+          <div class="field" style="margin-bottom:10px;"><input type="text" class="p-name" placeholder="Full name" required></div>
+          <div class="field" style="margin-bottom:10px;"><input type="number" class="p-age" placeholder="Age" min="1" max="99" required></div>
+        </div>
+        <select class="p-gender"><option value="">Gender</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
+      </div>`;
+  }
+  pWrap.innerHTML = fields;
+
+  const payArea = document.getElementById('regPaymentArea');
+  if(isFree){
+    payArea.innerHTML = `<div class="msg-banner ok">This event is free to enter — no payment needed. Just submit the form below.</div>`;
+  }else{
+    const settings = await getSettings();
+    payArea.innerHTML = `
+      <div class="field">
+        <label>4. Payment — ₹${ev.fee}</label>
+        <div class="qr-box" id="qrHost"><p class="mono" style="font-size:12px;color:#8a7f6e;">Loading payment QR…</p></div>
+        <p class="hint">Scan and pay ₹${ev.fee} via UPI, then upload a screenshot of the successful payment below.</p>
+      </div>
+      <div class="field">
+        <label>Upload Payment Screenshot</label>
+        <div class="upload-box" id="uploadBox">
+          <p class="mono" style="font-size:12.5px;color:#8a7f6e;">📎 Click to upload payment screenshot (JPG/PNG)</p>
+          <input type="file" id="uploadInput" accept="image/*" style="display:none;">
+        </div>
+      </div>`;
+    renderPaymentQR(ev.fee, s.name);
+    const box = document.getElementById('uploadBox');
+    const input = document.getElementById('uploadInput');
+    box.addEventListener('click', ()=>input.click());
+    input.addEventListener('change', async ()=>{
+      const f = input.files[0]; if(!f) return;
+      box.innerHTML = `<p class="mono" style="font-size:12px;">Uploading screenshot…</p>`;
+      try{
+        const {dataUrl} = await compressImageToBlob(f, 1100, 0.7);
+        REG_UPLOAD_FILE = f;
+        REG_UPLOAD_PREVIEW = dataUrl;
+        box.classList.add('has-img');
+        box.innerHTML = `<img src="${dataUrl}" style="max-height:180px;margin:0 auto;"><p class="mono" style="font-size:11px;color:var(--green);margin-top:8px;">✓ Screenshot attached — click to replace</p>`;
+        box.addEventListener('click', ()=>input.click());
+      }catch(e){
+        box.innerHTML = `<p class="mono" style="font-size:12px;color:#B0463C;">Couldn't read that image, please try again.</p>`;
+      }
+    });
+  }
+}
+
+async function renderPaymentQR(amount, sportName){
+  const host = document.getElementById('qrHost');
+  if(!host) return;
+  const settings = await getSettings();
+  if(!settings.upiId){
+    host.innerHTML = `<p class="mono" style="font-size:12px;color:#B0463C;">Payment QR isn't configured yet. Please contact the organisers directly to pay for now.</p>`;
+    return;
+  }
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(settings.upiId)}&pn=${encodeURIComponent('Prateek Laurel Sports Fest')}&am=${amount}&cu=INR&tn=${encodeURIComponent(sportName+' registration')}`;
+  host.innerHTML = `<canvas id="qrCanvas"></canvas><p class="mono" style="font-size:12px;margin-top:10px;">${esc(settings.upiId)}</p><p class="mono" style="font-size:15px;font-weight:700;color:var(--maroon);">₹${amount}</p>`;
+  try{
+    new QRious({element: document.getElementById('qrCanvas'), value: upiUrl, size:200, foreground:'#201A17', background:'#FFFDF9'});
+  }catch(e){ host.innerHTML += `<p class="mono" style="font-size:11px;color:#B0463C;">QR generation failed — pay via UPI ID above.</p>`; }
+}
+
+async function submitRegistration(sportId){
+  const s = getSport(sportId);
+  const ev = currentEventConfig(sportId);
+  const catSel = document.getElementById('regCategory');
+  const isFree = ev.fee===0 || catSel.value==='60+';
+  const msgArea = document.getElementById('regMsgArea');
+  const phone = document.getElementById('regPhone').value.trim();
+  const flat = document.getElementById('regFlat').value.trim();
+  const names = [...document.querySelectorAll('.p-name')].map(i=>i.value.trim());
+  const ages = [...document.querySelectorAll('.p-age')].map(i=>i.value.trim());
+  const genders = [...document.querySelectorAll('.p-gender')].map(i=>i.value);
+  const teamNameEl = document.getElementById('regTeamName');
+
+  if(!phone || phone.length<10){ msgArea.innerHTML = `<div class="msg-banner err">Please enter a valid phone number.</div>`; return; }
+  if(!flat){ msgArea.innerHTML = `<div class="msg-banner err">Please enter your flat number.</div>`; return; }
+  if(names.some(n=>!n) || ages.some(a=>!a) || genders.some(g=>!g)){ msgArea.innerHTML = `<div class="msg-banner err">Please fill in all participant details.</div>`; return; }
+  if(!isFree && !REG_UPLOAD_FILE){ msgArea.innerHTML = `<div class="msg-banner err">Please upload your payment screenshot before submitting.</div>`; return; }
+
+  const btn = document.getElementById('regSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  let screenshotPath = null;
+  if(!isFree){
+    screenshotPath = await uploadImage('payment-screenshots', REG_UPLOAD_FILE, sportId);
+    if(!screenshotPath){
+      btn.disabled = false; btn.textContent = 'Submit Registration';
+      msgArea.innerHTML = `<div class="msg-banner err">Couldn't upload your screenshot — please check your connection and try again.</div>`;
+      return;
+    }
+  }
+
+  const participants = names.map((n,i)=>({name:n, age:ages[i], gender:genders[i]}));
+  const row = {
+    sport_id: sportId, sport_name: s.name,
+    category_id: catSel.value,
+    event_id: ev.id, event_label: ev.label,
+    gender_cat: document.getElementById('regGenderCat')?.value || null,
+    team_name: teamNameEl ? teamNameEl.value.trim() : null,
+    participants, phone, flat,
+    fee: isFree?0:ev.fee,
+    screenshot_path: screenshotPath,
+    status: isFree ? 'approved' : 'pending',
+    player_id: isFree ? genPlayerId(s) : null,
+  };
+  const {ok, data} = await tInsert('registrations', row);
+  btn.disabled = false; btn.textContent = 'Submit Registration';
+  if(!ok){ msgArea.innerHTML = `<div class="msg-banner err">Something went wrong saving your registration. Please try again.</div>`; return; }
+
+  if(isFree){
+    msgArea.innerHTML = `<div class="msg-banner ok">You're in! Your Player ID is <strong>${data.player_id}</strong>. Save this for reporting on event day.</div>`;
+  }else{
+    msgArea.innerHTML = `<div class="msg-banner ok">Registration submitted — thank you! Organisers will verify your payment shortly and issue your Player ID. Check status anytime using your phone number.</div>`;
+  }
+  document.getElementById('regDynamicArea').querySelectorAll('input,select,button').forEach(el=>{ if(el.id!=='regSubmitBtn') el.disabled=true; });
+  toast('Registration submitted', 'ok');
+}
+
+function genPlayerId(sport){
+  const code = sport.id.slice(0,4).toUpperCase();
+  return 'PL26-' + code + '-' + Math.floor(1000+Math.random()*9000);
+}
+
+async function checkRegStatus(){
+  const phone = document.getElementById('statusPhoneInput').value.trim();
+  const host = document.getElementById('statusResult');
+  if(!phone){ host.innerHTML = `<div class="msg-banner err">Enter a phone number.</div>`; return; }
+  host.innerHTML = `<div class="loading-dots">Checking…</div>`;
+  const {data, error} = await sb.rpc('check_registration_status', {p_phone: phone});
+  if(error){ host.innerHTML = `<div class="msg-banner err">Couldn't check status right now — please try again.</div>`; return; }
+  if(!data || !data.length){ host.innerHTML = `<div class="msg-banner info">No registrations found for that number.</div>`; return; }
+  host.innerHTML = data.map(r=>`
+    <div style="border:1px solid var(--line);padding:12px;margin-top:10px;background:var(--white);">
+      <strong style="font-family:'Anton';text-transform:uppercase;">${esc(r.sport_name)} — ${esc(r.event_label)}</strong>
+      <div class="mono" style="font-size:11.5px;margin-top:6px;">
+        Status: <span class="badge ${r.status==='approved'?'green':(r.status==='rejected'?'maroon':'gold')}">${r.status}</span>
+      </div>
+      ${r.player_id ? `<div style="margin-top:8px;"><span class="player-id-tag">${r.player_id}</span></div>` : ''}
+    </div>`).join('');
+}
+</script>
+<script>
+/* =========================================================
+   PAGE: ADMIN
+   ========================================================= */
+async function renderAdmin(){
+  const session = await currentAdminSession();
+  STATE.adminAuthed = !!session;
+  if(!STATE.adminAuthed){
+    renderShell(`
+      <section class="wrap" style="max-width:420px;padding-top:90px;padding-bottom:120px;">
+        <div class="eyebrow">Organiser Login</div>
+        <h1 class="h-md" style="margin-bottom:24px;">Sports Committee Backend</h1>
+        <div class="form-card" style="max-width:none;padding:26px;">
+          <div class="field"><label>Email</label><input type="email" id="adminEmail" placeholder="you@example.com"></div>
+          <div class="field"><label>Password</label><input type="password" id="adminPass" placeholder="Enter password"></div>
+          <div id="adminLoginMsg"></div>
+          <button class="btn btn-primary" id="adminLoginBtn" style="width:100%;justify-content:center;">Log In</button>
+          <p class="hint" style="margin-top:14px;">Organiser accounts are created in the Supabase dashboard — see README.md. There's no public sign-up.</p>
+        </div>
+      </section>
+    `);
+    document.getElementById('adminLoginBtn').addEventListener('click', async ()=>{
+      const email = document.getElementById('adminEmail').value.trim();
+      const pass = document.getElementById('adminPass').value;
+      const msg = document.getElementById('adminLoginMsg');
+      msg.innerHTML = `<p class="mono" style="font-size:12px;color:#8a7f6e;">Signing in…</p>`;
+      const {ok, error} = await adminSignIn(email, pass);
+      if(ok){ STATE.adminAuthed = true; renderAdminPanel(); }
+      else{ msg.innerHTML = `<div class="msg-banner err">${esc(error?.message || 'Could not sign in.')}</div>`; }
+    });
+    document.getElementById('adminPass').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('adminLoginBtn').click(); });
+    return;
+  }
+  renderAdminPanel();
+}
+
+const ADMIN_SECTIONS = [
+  {id:'registrations', label:'Registrations'},
+  {id:'updates', label:'Updates & Announcements'},
+  {id:'fixtures', label:'Fixtures & Results'},
+  {id:'sponsors', label:'Sponsorships'},
+  {id:'photos', label:'Photos & Highlights'},
+  {id:'settings', label:'Settings'},
+];
+
+async function renderAdminPanel(){
+  renderShell(`
+    <section class="wrap" style="padding-top:34px;">
+      <div class="admin-toolbar">
+        <div>
+          <div class="eyebrow">Backend</div>
+          <h1 class="h-md">Sports Committee Console</h1>
+        </div>
+        <button class="btn-ghost" id="adminLogoutBtn">Log Out</button>
+      </div>
+      <div class="admin-shell">
+        <div class="admin-sidenav" id="adminSidenav">
+          ${ADMIN_SECTIONS.map(s=>`<button data-sec="${s.id}" class="${STATE.adminSection===s.id?'active':''}">${s.label}</button>`).join('')}
+        </div>
+        <div class="admin-main" id="adminMain"><div class="loading-dots">Loading…</div></div>
+      </div>
+    </section>
+  `);
+  document.getElementById('adminLogoutBtn').addEventListener('click', async ()=>{ await adminSignOut(); STATE.adminAuthed=false; render(); });
+  document.getElementById('adminSidenav').addEventListener('click', e=>{
+    const btn = e.target.closest('[data-sec]'); if(!btn) return;
+    STATE.adminSection = btn.dataset.sec;
+    document.querySelectorAll('#adminSidenav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    loadAdminSection();
+  });
+  await loadAdminSection();
+}
+
+async function loadAdminSection(){
+  const map = {
+    registrations: adminRegistrations,
+    updates: adminUpdates,
+    fixtures: adminFixtures,
+    sponsors: adminSponsors,
+    photos: adminPhotos,
+    settings: adminSettings,
+  };
+  await map[STATE.adminSection]();
+}
+
+/* ---------- Admin: Registrations ---------- */
+async function adminRegistrations(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `
+    <div class="pill-tabs" id="regStatusPills">
+      <button class="pill ${STATE.regFilter.status==='pending'?'active':''}" data-s="pending">Pending</button>
+      <button class="pill ${STATE.regFilter.status==='approved'?'active':''}" data-s="approved">Approved</button>
+      <button class="pill ${STATE.regFilter.status==='rejected'?'active':''}" data-s="rejected">Rejected</button>
+      <button class="pill ${STATE.regFilter.status==='all'?'active':''}" data-s="all">All</button>
+    </div>
+    <div id="regStatsRow"></div>
+    <div id="regListHost"><div class="loading-dots">Loading registrations…</div></div>
+  `;
+  main.querySelector('#regStatusPills').addEventListener('click', e=>{
+    const b = e.target.closest('[data-s]'); if(!b) return;
+    STATE.regFilter.status = b.dataset.s;
+    adminRegistrations();
+  });
+  const all = await tFetchAll('registrations', 'submitted_at', false);
+  STATE.cache.registrations = all;
+  const counts = {pending:0, approved:0, rejected:0};
+  all.forEach(r=>{ if(counts[r.status]!==undefined) counts[r.status]++; });
+  document.getElementById('regStatsRow').innerHTML = `
+    <div class="stat-row">
+      <div class="stat-box"><div class="n">${counts.pending}</div><div class="l">Pending</div></div>
+      <div class="stat-box"><div class="n">${counts.approved}</div><div class="l">Approved</div></div>
+      <div class="stat-box"><div class="n">${all.length}</div><div class="l">Total</div></div>
+    </div>`;
+  let list = STATE.regFilter.status==='all' ? all : all.filter(r=>r.status===STATE.regFilter.status);
+  const host = document.getElementById('regListHost');
+  if(!list.length){ host.innerHTML = `<div class="empty-state"><div class="em-icon">📋</div><p>Nothing here.</p></div>`; return; }
+  host.innerHTML = list.map(r=>`
+    <div class="reg-item" id="regitem-${r.id}">
+      <div class="rtop">
+        <div>
+          <div class="rname">${esc(r.sport_name)} — ${esc(r.event_label)}</div>
+          <div class="rmeta">${r.participants.map(p=>esc(p.name)+' ('+esc(p.age)+', '+esc(p.gender)+')').join(' · ')}</div>
+          <div class="rmeta">📞 ${esc(r.phone)} &nbsp;·&nbsp; 🏠 ${esc(r.flat)} ${r.team_name?(' · Team: '+esc(r.team_name)):''}</div>
+          <div class="rmeta">Submitted ${fmtDateTime(r.submitted_at)} ${r.fee?(' · Fee ₹'+r.fee):' · Free entry'}</div>
+        </div>
+        <span class="badge ${r.status==='approved'?'green':(r.status==='rejected'?'maroon':'gold')}">${r.status}</span>
+      </div>
+      ${r.screenshot_path ? `<div style="margin-top:10px;"><span class="thumb-link" data-view-shot="${r.id}">📎 View payment screenshot</span></div>` : ''}
+      ${r.player_id ? `<div style="margin-top:10px;"><span class="player-id-tag">${r.player_id}</span></div>` : ''}
+      <div class="ractions">
+        ${r.status==='pending' ? `<button class="btn-approve" data-approve="${r.id}">Approve & Issue Player ID</button><button class="btn-reject" data-reject="${r.id}">Reject</button>` : ''}
+        <button class="btn-del" data-del-reg="${r.id}">Delete</button>
+      </div>
+    </div>`).join('');
+  host.querySelectorAll('[data-view-shot]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const r = list.find(x=>x.id===el.dataset.viewShot);
+      const url = await signedUrl('payment-screenshots', r.screenshot_path, 600);
+      openModal(`<button class="close-x" id="modalClose">✕</button><h3 style="font-size:18px;">Payment Screenshot</h3>${url?`<img src="${url}">`:`<p>Couldn't load screenshot.</p>`}`);
+    });
+  });
+  host.querySelectorAll('[data-approve]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const r = all.find(x=>x.id===el.dataset.approve);
+      const sport = getSport(r.sport_id);
+      const {ok} = await tUpdate('registrations', r.id, {status:'approved', player_id: genPlayerId(sport)});
+      if(ok) toast('Registration approved — Player ID issued', 'ok'); else toast('Could not approve — try again', 'err');
+      adminRegistrations();
+    });
+  });
+  host.querySelectorAll('[data-reject]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const r = all.find(x=>x.id===el.dataset.reject);
+      const {ok} = await tUpdate('registrations', r.id, {status:'rejected'});
+      if(ok) toast('Registration rejected', 'info'); else toast('Could not reject — try again', 'err');
+      adminRegistrations();
+    });
+  });
+  host.querySelectorAll('[data-del-reg]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      if(!confirm('Delete this registration permanently?')) return;
+      const r = all.find(x=>x.id===el.dataset.delReg);
+      if(r.screenshot_path) await sb.storage.from('payment-screenshots').remove([r.screenshot_path]);
+      await tDelete('registrations', el.dataset.delReg);
+      toast('Registration deleted', 'info');
+      adminRegistrations();
+    });
+  });
+}
+
+function openModal(inner){
+  const host = document.getElementById('toast-host');
+  const bd = document.createElement('div');
+  bd.className = 'modal-backdrop';
+  bd.innerHTML = `<div class="modal-box">${inner}</div>`;
+  host.appendChild(bd);
+  bd.addEventListener('click', e=>{ if(e.target===bd) bd.remove(); });
+  bd.querySelector('#modalClose')?.addEventListener('click', ()=>bd.remove());
+}
+
+/* ---------- Admin: Updates ---------- */
+async function adminUpdates(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `
+    <h3 class="h-md" style="margin-bottom:18px;">Add Update / Announcement</h3>
+    <div class="form-card" style="max-width:640px;padding:22px;margin-bottom:36px;">
+      <div class="form-grid-2">
+        <div class="field"><label>Title</label><input type="text" id="uTitle"></div>
+        <div class="field"><label>Category</label><select id="uCat">${UPDATE_CATS.map(c=>`<option value="${c}">${UPDATE_CAT_LABEL[c]}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><label>Details</label><textarea id="uBody" rows="4"></textarea></div>
+      <div class="field"><label><input type="checkbox" id="uPin" style="width:auto;margin-right:8px;">Pin to top</label></div>
+      <button class="btn btn-primary" id="uAddBtn">Post Update</button>
+    </div>
+    <h3 class="h-md" style="margin-bottom:18px;">All Updates</h3>
+    <div id="uList"><div class="loading-dots">Loading…</div></div>
+  `;
+  document.getElementById('uAddBtn').addEventListener('click', async ()=>{
+    const title = document.getElementById('uTitle').value.trim();
+    const body = document.getElementById('uBody').value.trim();
+    if(!title || !body){ toast('Add a title and details first', 'err'); return; }
+    const item = {title, body, category:document.getElementById('uCat').value, pinned:document.getElementById('uPin').checked, date:new Date().toISOString()};
+    const {ok} = await tInsert('updates', item);
+    if(ok) toast('Update posted', 'ok'); else toast('Could not post update', 'err');
+    adminUpdates();
+  });
+  const list = await tFetchAll('updates', 'date', false);
+  const host = document.getElementById('uList');
+  if(!list.length){ host.innerHTML = `<div class="empty-state"><p>No updates yet.</p></div>`; return; }
+  host.innerHTML = list.map(u=>`
+    <div class="reg-item">
+      <div class="rtop">
+        <div><div class="rname" style="font-size:16px;">${esc(u.title)}</div><div class="rmeta">${UPDATE_CAT_LABEL[u.category]} · ${fmtDateTime(u.date)}${u.pinned?' · 📌 Pinned':''}</div></div>
+      </div>
+      <p style="font-size:13.5px;margin-top:8px;color:#3a332c;">${esc(u.body)}</p>
+      <div class="ractions"><button class="btn-del" data-del-upd="${u.id}">Delete</button></div>
+    </div>`).join('');
+  host.querySelectorAll('[data-del-upd]').forEach(el=>{
+    el.addEventListener('click', async ()=>{ if(!confirm('Delete this update?')) return; await tDelete('updates', el.dataset.delUpd); toast('Deleted','info'); adminUpdates(); });
+  });
+}
+</script>
+<script>
+/* ---------- Admin: Fixtures & Results ---------- */
+async function adminFixtures(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `
+    <h3 class="h-md" style="margin-bottom:18px;">Add Fixture</h3>
+    <div class="form-card" style="max-width:640px;padding:22px;margin-bottom:36px;">
+      <div class="form-grid-2">
+        <div class="field"><label>Sport</label><select id="fSport">${SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</select></div>
+        <div class="field"><label>Status</label><select id="fStatus"><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="field"><label>Date</label><input type="date" id="fDate"></div>
+        <div class="field"><label>Time</label><input type="time" id="fTime"></div>
+      </div>
+      <div class="field"><label>Venue</label><input type="text" id="fVenue"></div>
+      <div class="field"><label>Participants / Teams</label><input type="text" id="fPart" placeholder="e.g. Team A vs Team B, or list of names"></div>
+      <div class="field"><label>Result (optional)</label><input type="text" id="fResult" placeholder="e.g. Team A won 21-15"></div>
+      <button class="btn btn-primary" id="fAddBtn">Add Fixture</button>
+    </div>
+    <h3 class="h-md" style="margin-bottom:18px;">All Fixtures</h3>
+    <div id="fList"><div class="loading-dots">Loading…</div></div>
+  `;
+  document.getElementById('fAddBtn').addEventListener('click', async ()=>{
+    const item = {
+      sport_id:document.getElementById('fSport').value,
+      date:document.getElementById('fDate').value || null, time:document.getElementById('fTime').value,
+      venue:document.getElementById('fVenue').value.trim(), participants_text:document.getElementById('fPart').value.trim(),
+      status:document.getElementById('fStatus').value, result:document.getElementById('fResult').value.trim()
+    };
+    const {ok} = await tInsert('fixtures', item);
+    if(ok) toast('Fixture added', 'ok'); else toast('Could not add fixture', 'err');
+    adminFixtures();
+  });
+  const list = await tFetchAll('fixtures', 'date', false);
+  const host = document.getElementById('fList');
+  if(!list.length){ host.innerHTML = `<div class="empty-state"><p>No fixtures yet.</p></div>`; return; }
+  host.innerHTML = list.map(f=>{
+    const sp = getSport(f.sport_id);
+    return `<div class="reg-item">
+      <div class="rtop">
+        <div>
+          <div class="rname" style="font-size:16px;">${sp?sp.icon+' '+sp.name:f.sport_id}</div>
+          <div class="rmeta">${fmtDate(f.date)}${f.time?(' · '+f.time):''} · 📍 ${esc(f.venue||'TBA')}</div>
+          <div class="rmeta">${esc(f.participants_text||'')}</div>
+          ${f.result?`<div class="rmeta">🏆 ${esc(f.result)}</div>`:''}
+        </div>
+        <span class="badge ${f.status==='completed'?'green':'maroon'}">${f.status}</span>
+      </div>
+      <div class="ractions"><button class="btn-del" data-del-fx="${f.id}">Delete</button></div>
+    </div>`;
+  }).join('');
+  host.querySelectorAll('[data-del-fx]').forEach(el=>{
+    el.addEventListener('click', async ()=>{ if(!confirm('Delete this fixture?')) return; await tDelete('fixtures', el.dataset.delFx); toast('Deleted','info'); adminFixtures(); });
+  });
+}
+
+/* ---------- Admin: Sponsorships ---------- */
+async function adminSponsors(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `
+    <h3 class="h-md" style="margin-bottom:18px;">Add Sponsor</h3>
+    <div class="form-card" style="max-width:640px;padding:22px;margin-bottom:36px;">
+      <div class="form-grid-2">
+        <div class="field"><label>Name</label><input type="text" id="spName"></div>
+        <div class="field"><label>Tier</label><select id="spTier">${SPONSOR_TIERS.map(t=>`<option value="${t}">${SPONSOR_TIER_LABEL[t]}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><label>Website (optional)</label><input type="url" id="spWebsite" placeholder="https://"></div>
+      <div class="field"><label>Short blurb (optional)</label><textarea id="spBlurb" rows="2"></textarea></div>
+      <div class="field">
+        <label>Logo (optional)</label>
+        <div class="upload-box" id="spLogoBox"><p class="mono" style="font-size:12px;color:#8a7f6e;">📎 Click to upload logo</p><input type="file" id="spLogoInput" accept="image/*" style="display:none;"></div>
+      </div>
+      <button class="btn btn-primary" id="spAddBtn">Add Sponsor</button>
+    </div>
+    <h3 class="h-md" style="margin-bottom:18px;">All Sponsors</h3>
+    <div id="spList"><div class="loading-dots">Loading…</div></div>
+  `;
+  let spLogoFile = null;
+  const box = document.getElementById('spLogoBox');
+  const input = document.getElementById('spLogoInput');
+  box.addEventListener('click', ()=>input.click());
+  input.addEventListener('change', async ()=>{
+    const f = input.files[0]; if(!f) return;
+    spLogoFile = f;
+    const {dataUrl} = await compressImageToBlob(f, 300, 0.75);
+    box.innerHTML = `<img src="${dataUrl}" style="max-height:80px;margin:0 auto;">`;
+    box.addEventListener('click', ()=>input.click());
+  });
+  document.getElementById('spAddBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('spName').value.trim();
+    if(!name){ toast('Enter a sponsor name', 'err'); return; }
+    let logoUrl = null;
+    if(spLogoFile){
+      const path = await uploadImage('sponsor-logos', spLogoFile, 'logo');
+      if(path) logoUrl = publicUrl('sponsor-logos', path);
+    }
+    const item = {name, tier:document.getElementById('spTier').value, website:document.getElementById('spWebsite').value.trim(), blurb:document.getElementById('spBlurb').value.trim(), logo_url:logoUrl};
+    const {ok} = await tInsert('sponsors', item);
+    if(ok) toast('Sponsor added', 'ok'); else toast('Could not add sponsor', 'err');
+    adminSponsors();
+  });
+  const list = await tFetchAll('sponsors', 'name', true);
+  const host = document.getElementById('spList');
+  if(!list.length){ host.innerHTML = `<div class="empty-state"><p>No sponsors yet.</p></div>`; return; }
+  host.innerHTML = list.map(s=>`
+    <div class="reg-item">
+      <div class="rtop">
+        <div><div class="rname" style="font-size:16px;">${esc(s.name)}</div><div class="rmeta">${SPONSOR_TIER_LABEL[s.tier]||s.tier}</div></div>
+        ${s.logo_url?`<img src="${s.logo_url}" style="width:40px;height:40px;object-fit:contain;">`:''}
+      </div>
+      <div class="ractions"><button class="btn-del" data-del-spn="${s.id}">Delete</button></div>
+    </div>`).join('');
+  host.querySelectorAll('[data-del-spn]').forEach(el=>{
+    el.addEventListener('click', async ()=>{ if(!confirm('Delete this sponsor?')) return; await tDelete('sponsors', el.dataset.delSpn); toast('Deleted','info'); adminSponsors(); });
+  });
+}
+
+/* ---------- Admin: Photos & Highlights ---------- */
+async function adminPhotos(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `
+    <h3 class="h-md" style="margin-bottom:18px;">Add Photo / Highlight</h3>
+    <div class="form-card" style="max-width:640px;padding:22px;margin-bottom:36px;">
+      <div class="field">
+        <label>Photo</label>
+        <div class="upload-box" id="phBox"><p class="mono" style="font-size:12px;color:#8a7f6e;">📎 Click to upload a photo</p><input type="file" id="phInput" accept="image/*" style="display:none;"></div>
+      </div>
+      <div class="field"><label>Caption</label><input type="text" id="phCaption"></div>
+      <button class="btn btn-primary" id="phAddBtn">Post Photo</button>
+      <p class="hint">Posted photos also appear as a "Photo / Highlight" item on the Updates page.</p>
+    </div>
+    <h3 class="h-md" style="margin-bottom:18px;">All Photos</h3>
+    <div id="phList" class="grid grid-3"><div class="loading-dots">Loading…</div></div>
+  `;
+  let phFile = null;
+  const box = document.getElementById('phBox');
+  const input = document.getElementById('phInput');
+  box.addEventListener('click', ()=>input.click());
+  input.addEventListener('change', async ()=>{
+    const f = input.files[0]; if(!f) return;
+    phFile = f;
+    const {dataUrl} = await compressImageToBlob(f, 900, 0.65);
+    box.innerHTML = `<img src="${dataUrl}" style="max-height:160px;margin:0 auto;">`;
+    box.addEventListener('click', ()=>input.click());
+  });
+  document.getElementById('phAddBtn').addEventListener('click', async ()=>{
+    if(!phFile){ toast('Upload a photo first', 'err'); return; }
+    const caption = document.getElementById('phCaption').value.trim();
+    const path = await uploadImage('event-photos', phFile, 'photo');
+    if(!path){ toast('Upload failed — try again', 'err'); return; }
+    const url = publicUrl('event-photos', path);
+    const date = new Date().toISOString();
+    const {ok, data} = await tInsert('photos', {url, caption, date});
+    if(ok){
+      await tInsert('updates', {title:caption||'New photo posted', body:'A new photo/highlight has been added to the gallery.', category:'photo-highlight', pinned:false, date});
+      toast('Photo posted', 'ok');
+    }else{ toast('Could not save photo', 'err'); }
+    adminPhotos();
+  });
+  const list = await tFetchAll('photos', 'date', false);
+  const host = document.getElementById('phList');
+  if(!list.length){ host.innerHTML = `<div class="empty-state"><p>No photos yet.</p></div>`; return; }
+  host.innerHTML = list.map(p=>`
+    <div class="card" style="padding:12px;">
+      <img src="${p.url}" style="margin-bottom:8px;">
+      <p style="font-size:13px;">${esc(p.caption||'')}</p>
+      <button class="btn-del" style="margin-top:8px;" data-del-pho="${p.id}">Delete</button>
+    </div>`).join('');
+  host.querySelectorAll('[data-del-pho]').forEach(el=>{
+    el.addEventListener('click', async ()=>{ if(!confirm('Delete this photo?')) return; await tDelete('photos', el.dataset.delPho); toast('Deleted','info'); adminPhotos(); });
+  });
+}
+
+/* ---------- Admin: Settings ---------- */
+async function adminSettings(){
+  const main = document.getElementById('adminMain');
+  const s = await getSettings();
+  main.innerHTML = `
+    <h3 class="h-md" style="margin-bottom:18px;">Payment Settings</h3>
+    <div class="form-card" style="max-width:520px;padding:22px;margin-bottom:36px;">
+      <div class="field"><label>UPI ID for receiving payments</label><input type="text" id="setUpi" value="${esc(s.upiId)}" placeholder="yourname@bank"></div>
+      <p class="hint" style="margin-top:-10px;margin-bottom:18px;">This generates the live QR code shown on registration forms. No payment gateway is involved — participants pay you directly via UPI and upload a screenshot for you to verify.</p>
+      <button class="btn btn-primary" id="setSaveBtn">Save Settings</button>
+      <div id="setMsg"></div>
+    </div>
+    <h3 class="h-md" style="margin-bottom:18px;">Organiser Accounts</h3>
+    <div class="card" style="max-width:520px;">
+      <p style="font-size:14px;line-height:1.6;">Organiser logins (Rahul, Tarun, Kapil, or anyone else on the committee) are managed in the Supabase dashboard, not here — <strong>Authentication → Users → Add user</strong>. This keeps a determined visitor from ever reaching the admin console, since there's no in-app sign-up.</p>
+    </div>
+  `;
+  document.getElementById('setSaveBtn').addEventListener('click', async ()=>{
+    await saveSettings({upiId:document.getElementById('setUpi').value.trim()});
+    document.getElementById('setMsg').innerHTML = `<div class="msg-banner ok" style="margin-top:14px;">Settings saved.</div>`;
+    toast('Settings saved', 'ok');
+  });
+}
+</script>
+<script>
+/* =========================================================
+   MAIN ROUTER
+   ========================================================= */
+async function render(){
+  if(!CONFIG_READY){
+    document.getElementById('app').innerHTML = `
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--cream);padding:40px 20px;">
+        <div style="max-width:520px;">
+          <div class="eyebrow" style="color:var(--gold-light)">Setup needed</div>
+          <h1 class="h-md" style="color:var(--white);">Connect Supabase to launch this site</h1>
+          <p style="margin-top:14px;color:#C9BFA9;font-size:15px;line-height:1.6;">
+            Open <code style="background:#000;padding:2px 6px;">index.html</code>, find <code style="background:#000;padding:2px 6px;">SUPABASE_URL</code> and
+            <code style="background:#000;padding:2px 6px;">SUPABASE_ANON_KEY</code> near the top of the script, and paste in the values from your
+            Supabase project's <strong>Settings → API</strong> page. See README.md for the full walkthrough.
+          </p>
+        </div>
+      </div>`;
+    return;
+  }
+  const {route, param} = parseHash();
+  STATE.route = route;
+  STATE.params = {param};
+  window.scrollTo(0,0);
+  try{
+    switch(route){
+      case 'home': await renderHome(); break;
+      case 'sports': await renderSportsIndex(); break;
+      case 'sport': await renderSportDetail(param); break;
+      case 'schedule': await renderSchedule(); break;
+      case 'rules': await renderRulesIndex(); break;
+      case 'fixtures': await renderFixtures(); break;
+      case 'updates': await renderUpdates(param); break;
+      case 'sponsors': await renderSponsors(); break;
+      case 'contact': await renderContact(); break;
+      case 'register': await renderRegister(param); break;
+      case 'admin': await renderAdmin(); break;
+      default: await renderHome();
+    }
+  }catch(err){
+    console.error(err);
+    document.getElementById('app').innerHTML = `<div class="wrap" style="padding:80px 0;text-align:center;"><h2 class="h-md">Something went wrong loading this page.</h2><p style="margin-top:10px;"><a href="#home" style="color:var(--maroon);">Return home →</a></p></div>`;
+  }
+}
+
+render();
+</script>
+</body>
+</html>
