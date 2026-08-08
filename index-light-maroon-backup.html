@@ -5,66 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prateek Laurel Sports Fest 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --navy:#0F1B2D;
-  --ink:#0B141F;
-  --white:#16273D;
-  --cream-dim:#1C2E47;
-  --cream:#F5F3EC;
-  --bright:#F5F3EC;
-  --gold:#E8A33D;
-  --gold-light:#F0B356;
-  --maroon:#F0917C;
-  --maroon-dark:#9C3620;
-  --clay:#C1442D;
-  --green:#8FD6B0;
-  --green-deep:#1F5B3F;
-  --slate:#93A0B0;
-  --line:rgba(245,243,236,0.14);
-  --radius:4px;
+  --maroon:#7C1F2B;
+  --maroon-dark:#5A1520;
+  --gold:#C08A2E;
+  --gold-light:#E3B45C;
+  --cream:#F6F1E6;
+  --cream-dim:#EDE4D3;
+  --ink:#201A17;
+  --green:#2F4A3C;
+  --line:#D8CBB0;
+  --white:#FFFDF9;
+  --radius:2px;
 }
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{
   margin:0;
-  background:var(--navy);
-  color:var(--bright);
+  background:var(--cream);
+  color:var(--ink);
   font-family:'Work Sans',sans-serif;
-  line-height:1.55;
   -webkit-font-smoothing:antialiased;
 }
 ::selection{background:var(--gold);color:var(--ink);}
 h1,h2,h3,.display{
-  font-family:'Oswald',sans-serif;
-  font-weight:600;
+  font-family:'Anton',sans-serif;
+  font-weight:400;
   text-transform:uppercase;
-  letter-spacing:0.02em;
-  line-height:1.02;
+  letter-spacing:0.01em;
+  line-height:0.95;
   margin:0;
 }
-.mono{font-family:'IBM Plex Mono',monospace;}
+.mono{font-family:'JetBrains Mono',monospace;}
 a{color:inherit;text-decoration:none;}
 button{font-family:inherit;cursor:pointer;}
 img{max-width:100%;display:block;}
 
 /* ===== Lane divider pattern ===== */
 .lane-rule{
-  height:5px;
-  background:repeating-linear-gradient(90deg,var(--gold) 0 26px, transparent 26px 34px);
-  opacity:.55;
+  height:6px;
+  background:repeating-linear-gradient(90deg,var(--maroon) 0 26px, transparent 26px 34px);
+  opacity:.85;
 }
-.lane-rule.gold{background:repeating-linear-gradient(90deg,var(--clay) 0 26px, transparent 26px 34px);}
+.lane-rule.gold{background:repeating-linear-gradient(90deg,var(--gold) 0 26px, transparent 26px 34px);}
 
 /* ===== Topbar / Nav ===== */
 .topbar{
   position:sticky;top:0;z-index:100;
-  background:rgba(15,27,45,0.92);
-  backdrop-filter:blur(8px);
-  border-bottom:1px solid var(--line);
+  background:var(--ink);
+  color:var(--cream);
 }
 .topbar-inner{
   max-width:1180px;margin:0 auto;
@@ -72,35 +65,35 @@ img{max-width:100%;display:block;}
   padding:14px 20px;
 }
 .brand{display:flex;align-items:center;gap:12px;}
-.brand-mark{width:34px;height:34px;flex:none;}
+.brand-mark{width:38px;height:38px;flex:none;}
 .brand-text{display:flex;flex-direction:column;line-height:1;}
-.brand-text .b1{font-family:'Oswald';font-weight:600;font-size:14px;letter-spacing:.05em;color:var(--bright);text-transform:uppercase;}
-.brand-text .b2{font-family:'IBM Plex Mono';font-size:10px;letter-spacing:.12em;color:var(--slate);margin-top:3px;}
+.brand-text .b1{font-family:'Anton';font-size:15px;letter-spacing:.03em;color:var(--gold-light);}
+.brand-text .b2{font-family:'JetBrains Mono';font-size:10px;letter-spacing:.14em;color:#C9BFA9;margin-top:3px;}
 nav.mainnav{display:flex;gap:2px;flex-wrap:wrap;}
 nav.mainnav a{
-  font-family:'Oswald';font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;
-  padding:9px 14px;color:var(--slate);border-radius:var(--radius);
+  font-family:'JetBrains Mono';font-size:12px;letter-spacing:.08em;
+  padding:9px 12px;color:#D8CFBE;border-bottom:2px solid transparent;
   transition:.15s;white-space:nowrap;
 }
-nav.mainnav a:hover{color:var(--bright);background:var(--cream-dim);}
-nav.mainnav a.active{color:var(--ink);background:var(--gold);font-weight:600;}
-.nav-toggle{display:none;background:none;border:1px solid var(--line);color:var(--bright);padding:8px 10px;border-radius:var(--radius);}
+nav.mainnav a:hover{color:var(--gold-light);}
+nav.mainnav a.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+.nav-toggle{display:none;background:none;border:1px solid #4a413a;color:var(--cream);padding:8px 10px;}
 @media(max-width:940px){
-  nav.mainnav{display:none;position:absolute;top:100%;left:0;right:0;background:var(--ink);flex-direction:column;padding:6px 12px 14px;border-top:1px solid var(--line);}
+  nav.mainnav{display:none;position:absolute;top:100%;left:0;right:0;background:var(--ink);flex-direction:column;padding:6px 12px 14px;border-top:1px solid #3a322c;}
   nav.mainnav.open{display:flex;}
-  nav.mainnav a{padding:11px 6px;border-bottom:1px solid var(--line);border-radius:0;}
+  nav.mainnav a{padding:11px 6px;border-bottom:1px solid #322b25;}
   .nav-toggle{display:block;}
 }
 
 /* ===== Ticker ===== */
 .ticker-wrap{
-  background:var(--cream-dim);color:var(--bright);
+  background:var(--maroon);color:var(--white);
   display:flex;align-items:stretch;overflow:hidden;
-  border-bottom:1px solid var(--line);
+  border-bottom:1px solid var(--maroon-dark);
 }
 .ticker-label{
   flex:none;background:var(--gold);color:var(--ink);
-  font-family:'IBM Plex Mono';font-size:11px;font-weight:600;letter-spacing:.1em;
+  font-family:'JetBrains Mono';font-size:11px;font-weight:700;letter-spacing:.1em;
   padding:8px 14px;display:flex;align-items:center;gap:6px;
 }
 .ticker-track{flex:1;overflow:hidden;position:relative;white-space:nowrap;display:flex;align-items:center;}
@@ -108,8 +101,8 @@ nav.mainnav a.active{color:var(--ink);background:var(--gold);font-weight:600;}
 .ticker-move:hover{animation-play-state:paused;}
 @keyframes tickmove{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .ticker-item{
-  font-family:'IBM Plex Mono';font-size:12.5px;padding:8px 34px 8px 0;cursor:pointer;
-  border-right:1px dashed var(--line);margin-right:34px;color:var(--slate);
+  font-family:'JetBrains Mono';font-size:12.5px;padding:8px 34px 8px 0;cursor:pointer;
+  border-right:1px dashed rgba(255,255,255,.25);margin-right:34px;
 }
 .ticker-item:hover{color:var(--gold-light);}
 .ticker-tag{color:var(--gold-light);margin-right:8px;}
@@ -118,51 +111,47 @@ nav.mainnav a.active{color:var(--ink);background:var(--gold);font-weight:600;}
 .wrap{max-width:1180px;margin:0 auto;padding:0 20px;}
 section{padding:64px 0;}
 .eyebrow{
-  font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--gold);display:flex;align-items:center;gap:10px;margin-bottom:14px;
+  font-family:'JetBrains Mono';font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--maroon);display:flex;align-items:center;gap:10px;margin-bottom:14px;
 }
-.eyebrow::before{content:'';width:22px;height:1px;background:var(--gold);}
-.h-xl{font-size:clamp(38px,6.5vw,76px);font-weight:700;}
-.h-lg{font-size:clamp(28px,4.2vw,46px);font-weight:600;}
-.h-md{font-size:clamp(21px,2.8vw,28px);font-weight:600;}
-.sub{font-size:16px;line-height:1.65;color:var(--slate);max-width:640px;}
+.eyebrow::before{content:'';width:22px;height:2px;background:var(--gold);}
+.h-xl{font-size:clamp(40px,7vw,84px);}
+.h-lg{font-size:clamp(30px,4.5vw,52px);}
+.h-md{font-size:clamp(22px,3vw,30px);}
+.sub{font-size:17px;line-height:1.65;color:#4a4139;max-width:640px;}
 
 /* ===== Hero ===== */
 .hero{
-  position:relative;overflow:hidden;
-  background:
-    radial-gradient(circle at 85% 0%, rgba(31,91,63,0.45), transparent 55%),
-    radial-gradient(circle at 8% 95%, rgba(232,163,61,0.16), transparent 45%),
-    var(--navy);
-  border-bottom:1px solid var(--line);
+  position:relative;background:var(--ink);color:var(--cream);overflow:hidden;
+  padding:0;
 }
 .hero-inner{max-width:1180px;margin:0 auto;padding:76px 20px 60px;position:relative;z-index:2;}
 .hero-dates{
-  display:inline-flex;align-items:center;gap:10px;font-family:'IBM Plex Mono';
-  font-size:12.5px;letter-spacing:.06em;color:var(--slate);border:1px solid var(--line);
-  padding:7px 14px;margin-bottom:26px;border-radius:20px;
+  display:inline-flex;align-items:center;gap:10px;font-family:'JetBrains Mono';
+  font-size:13px;letter-spacing:.08em;color:var(--gold-light);border:1px solid #4a413a;
+  padding:7px 14px;margin-bottom:26px;
 }
-.hero h1{color:var(--bright);}
+.hero h1{color:var(--white);}
 .hero h1 .accent{color:var(--gold);}
-.hero-lede{max-width:560px;color:var(--slate);font-size:16px;line-height:1.7;margin-top:22px;}
+.hero-lede{max-width:560px;color:#C9BFA9;font-size:17px;line-height:1.7;margin-top:22px;}
 .hero-ctas{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap;}
 .btn{
   display:inline-flex;align-items:center;gap:8px;
-  padding:13px 24px;font-family:'Oswald';font-size:13px;letter-spacing:.05em;text-transform:uppercase;
-  border:1px solid var(--line);border-radius:var(--radius);transition:.15s;background:transparent;color:var(--bright);
+  padding:14px 26px;font-family:'JetBrains Mono';font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid transparent;transition:.15s;
 }
-.btn-primary{background:var(--gold);color:var(--ink);font-weight:600;border-color:var(--gold);}
+.btn-primary{background:var(--gold);color:var(--ink);font-weight:700;}
 .btn-primary:hover{background:var(--gold-light);}
-.btn-outline{border-color:var(--line);color:var(--bright);}
+.btn-outline{border-color:#5a514a;color:var(--cream);}
 .btn-outline:hover{border-color:var(--gold);color:var(--gold-light);}
-.btn-dark{background:var(--cream-dim);color:var(--bright);border-color:var(--line);}
-.btn-dark:hover{border-color:var(--gold);}
-.btn-sm{padding:9px 16px;font-size:11.5px;}
-.hero-track{position:absolute;bottom:0;left:0;right:0;height:120px;background:linear-gradient(to top, rgba(15,27,45,0.6), transparent);}
-.wreath-decor{position:absolute;right:-40px;top:-40px;width:380px;height:380px;opacity:.10;z-index:1;}
+.btn-dark{background:var(--ink);color:var(--cream);}
+.btn-dark:hover{background:var(--maroon);}
+.btn-sm{padding:9px 16px;font-size:11px;}
+.hero-track{position:absolute;bottom:0;left:0;right:0;height:120px;opacity:.5;}
+.wreath-decor{position:absolute;right:-40px;top:-40px;width:420px;height:420px;opacity:.14;z-index:1;}
 
 /* ===== Cards ===== */
-.grid{display:grid;gap:18px;}
+.grid{display:grid;gap:22px;}
 .grid-3{grid-template-columns:repeat(3,1fr);}
 .grid-2{grid-template-columns:repeat(2,1fr);}
 .grid-4{grid-template-columns:repeat(4,1fr);}
@@ -170,67 +159,67 @@ section{padding:64px 0;}
 @media(max-width:600px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
 
 .card{
-  background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:24px;
+  background:var(--white);border:1px solid var(--line);padding:26px;
   transition:.18s;position:relative;
 }
-.card:hover{border-color:var(--gold);}
-.card .tag{font-family:'IBM Plex Mono';font-size:10.5px;letter-spacing:.09em;color:var(--gold);text-transform:uppercase;}
-.card h3{font-size:21px;margin-top:8px;}
-.card p{color:var(--slate);font-size:14.5px;line-height:1.55;margin-top:10px;}
+.card:hover{border-color:var(--maroon);transform:translateY(-2px);box-shadow:0 10px 24px rgba(32,26,23,.08);}
+.card .tag{font-family:'JetBrains Mono';font-size:10.5px;letter-spacing:.1em;color:var(--maroon);text-transform:uppercase;}
+.card h3{font-size:24px;margin-top:8px;}
+.card p{color:#5a5148;font-size:14.5px;line-height:1.55;margin-top:10px;}
 .sport-card{cursor:pointer;}
-.sport-card .meta{display:flex;gap:14px;margin-top:14px;font-family:'IBM Plex Mono';font-size:11px;color:var(--slate);flex-wrap:wrap;}
+.sport-card .meta{display:flex;gap:14px;margin-top:14px;font-family:'JetBrains Mono';font-size:11px;color:#8a7f6e;flex-wrap:wrap;}
 .sport-card .meta span{display:flex;align-items:center;gap:5px;}
 
 .badge{
-  display:inline-block;font-family:'IBM Plex Mono';font-size:10px;letter-spacing:.06em;
-  padding:4px 11px;border-radius:20px;text-transform:uppercase;
+  display:inline-block;font-family:'JetBrains Mono';font-size:10px;letter-spacing:.08em;
+  padding:4px 9px;border:1px solid currentColor;text-transform:uppercase;
 }
-.badge.gold{background:rgba(232,163,61,0.18);color:var(--gold-light);}
-.badge.maroon{background:rgba(193,68,45,0.22);color:var(--maroon);}
-.badge.green{background:rgba(31,91,63,0.35);color:var(--green);}
-.badge.grey{background:rgba(147,160,176,0.16);color:var(--slate);}
+.badge.gold{color:var(--gold);}
+.badge.maroon{color:var(--maroon);}
+.badge.green{color:var(--green);}
+.badge.grey{color:#8a7f6e;}
 
 /* ===== Timeline ===== */
-.timeline{position:relative;margin-top:40px;padding-left:28px;border-left:1px solid var(--line);}
+.timeline{position:relative;margin-top:40px;padding-left:28px;border-left:2px solid var(--line);}
 .tl-item{position:relative;padding-bottom:34px;}
 .tl-item:last-child{padding-bottom:0;}
-.tl-dot{position:absolute;left:-33px;top:2px;width:12px;height:12px;background:var(--gold);border:3px solid var(--navy);border-radius:50%;}
-.tl-date{font-family:'IBM Plex Mono';font-size:11.5px;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
-.tl-item h4{font-family:'Oswald';font-size:18px;font-weight:600;text-transform:uppercase;color:var(--bright);}
-.tl-item p{color:var(--slate);font-size:14px;margin-top:5px;max-width:560px;}
+.tl-dot{position:absolute;left:-34px;top:2px;width:14px;height:14px;background:var(--maroon);border:3px solid var(--cream);border-radius:50%;box-shadow:0 0 0 2px var(--maroon);}
+.tl-date{font-family:'JetBrains Mono';font-size:11.5px;color:var(--maroon);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+.tl-item h4{font-family:'Anton';font-size:19px;text-transform:uppercase;}
+.tl-item p{color:#5a5148;font-size:14px;margin-top:5px;max-width:560px;}
 
 /* ===== Footer ===== */
-footer{background:var(--ink);color:var(--slate);padding:52px 0 26px;margin-top:40px;border-top:1px solid var(--line);}
-footer h4{color:var(--gold-light);font-family:'IBM Plex Mono';font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;}
+footer{background:var(--ink);color:#C9BFA9;padding:52px 0 26px;margin-top:40px;}
+footer h4{color:var(--gold-light);font-family:'JetBrains Mono';font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;}
 footer .fgrid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;}
 @media(max-width:700px){footer .fgrid{grid-template-columns:1fr;}}
-footer a.flink{display:block;padding:5px 0;font-size:13.5px;color:var(--slate);}
+footer a.flink{display:block;padding:5px 0;font-size:13.5px;color:#C9BFA9;}
 footer a.flink:hover{color:var(--gold-light);}
-.footer-bottom{border-top:1px solid var(--line);margin-top:36px;padding-top:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--slate);}
-.footer-bottom a{color:var(--slate);}
+.footer-bottom{border-top:1px solid #3a322c;margin-top:36px;padding-top:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;color:#8a7f6e;}
+.footer-bottom a{color:#8a7f6e;}
 .footer-bottom a:hover{color:var(--gold-light);}
 
 /* ===== Forms ===== */
 .field{margin-bottom:18px;}
-.field label{display:block;font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--slate);margin-bottom:7px;}
-.field .hint{font-size:12px;color:var(--slate);margin-top:5px;}
+.field label{display:block;font-family:'JetBrains Mono';font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--maroon);margin-bottom:7px;}
+.field .hint{font-size:12px;color:#8a7f6e;margin-top:5px;}
 input[type=text],input[type=number],input[type=tel],input[type=email],input[type=password],select,textarea,input[type=date],input[type=time],input[type=url]{
-  width:100%;padding:11px 13px;border:1px solid var(--line);background:var(--navy);border-radius:var(--radius);
-  font-family:'Work Sans';font-size:14.5px;color:var(--bright);
+  width:100%;padding:12px 13px;border:1px solid var(--line);background:var(--white);
+  font-family:'Work Sans';font-size:14.5px;color:var(--ink);
 }
-input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:1px;border-color:var(--gold);}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--maroon);outline-offset:1px;border-color:var(--maroon);}
 textarea{resize:vertical;min-height:90px;}
-.form-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:32px;max-width:680px;}
+.form-card{background:var(--white);border:1px solid var(--line);padding:34px;max-width:680px;}
 .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 @media(max-width:600px){.form-grid-2{grid-template-columns:1fr;}}
-.upload-box{border:1px dashed var(--slate);border-radius:var(--radius);padding:22px;text-align:center;background:var(--cream-dim);cursor:pointer;}
-.upload-box:hover{border-color:var(--gold);}
+.upload-box{border:1.5px dashed var(--line);padding:22px;text-align:center;background:var(--cream-dim);cursor:pointer;}
+.upload-box:hover{border-color:var(--maroon);}
 .upload-box.has-img{padding:14px;}
-.qr-box{background:var(--cream-dim);border:1px dashed var(--slate);border-radius:var(--radius);padding:20px;text-align:center;}
-.msg-banner{padding:14px 18px;font-size:14px;margin-bottom:20px;border-radius:var(--radius);border:1px solid transparent;}
-.msg-banner.ok{background:rgba(31,91,63,0.28);border-color:var(--green-deep);color:var(--green);}
-.msg-banner.err{background:rgba(193,68,45,0.2);border-color:var(--clay);color:var(--maroon);}
-.msg-banner.info{background:rgba(232,163,61,0.14);border-color:var(--gold);color:var(--gold-light);}
+.qr-box{background:var(--white);border:1px solid var(--line);padding:20px;text-align:center;}
+.msg-banner{padding:14px 18px;font-size:14px;margin-bottom:20px;border-left:4px solid;}
+.msg-banner.ok{background:#EAF3EC;border-color:var(--green);color:#1f3a2c;}
+.msg-banner.err{background:#F7E8E4;border-color:#B0463C;color:#6b2a22;}
+.msg-banner.info{background:#F1EADB;border-color:var(--gold);color:#5c4713;}
 
 /* ===== Table / list rows ===== */
 .data-row{display:grid;grid-template-columns:120px 1fr auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line);}
@@ -238,77 +227,66 @@ textarea{resize:vertical;min-height:90px;}
 .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px;}
 .filter-bar select,.filter-bar input{width:auto;min-width:160px;}
 .pill-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px;}
-.pill{padding:8px 16px;border:1px solid var(--line);border-radius:20px;font-family:'IBM Plex Mono';font-size:11.5px;letter-spacing:.04em;background:var(--white);text-transform:uppercase;color:var(--slate);}
-.pill.active{background:var(--green-deep);color:var(--bright);border-color:var(--green-deep);}
+.pill{padding:8px 16px;border:1px solid var(--line);font-family:'JetBrains Mono';font-size:11.5px;letter-spacing:.05em;background:var(--white);text-transform:uppercase;}
+.pill.active{background:var(--maroon);color:var(--white);border-color:var(--maroon);}
 
 /* ===== Section headers with dividers ===== */
 .section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:36px;gap:20px;flex-wrap:wrap;}
 
 /* ===== Rules content ===== */
-.rules-block{background:var(--white);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:var(--radius);padding:26px 28px;}
-.rules-block h4{font-family:'Oswald';font-size:15px;font-weight:600;text-transform:uppercase;color:var(--gold-light);margin:24px 0 10px;letter-spacing:.03em;}
+.rules-block h4{font-family:'Anton';font-size:16px;text-transform:uppercase;color:var(--maroon);margin:26px 0 10px;letter-spacing:.02em;}
 .rules-block h4:first-child{margin-top:0;}
 .rules-block ul{margin:0 0 14px;padding-left:20px;}
-.rules-block li{margin-bottom:6px;font-size:14.5px;line-height:1.6;color:var(--slate);}
+.rules-block li{margin-bottom:6px;font-size:14.5px;line-height:1.6;color:#3a332c;}
 .rules-block table{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:13.5px;}
 .rules-block th,.rules-block td{border:1px solid var(--line);padding:8px 10px;text-align:left;}
-.rules-block th{background:var(--cream-dim);font-family:'IBM Plex Mono';font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate);}
-.rules-block td{color:var(--bright);}
-.rules-block p{font-size:14.5px;line-height:1.6;color:var(--slate);}
+.rules-block th{background:var(--cream-dim);font-family:'JetBrains Mono';font-size:11px;text-transform:uppercase;letter-spacing:.05em;}
+.rules-block p{font-size:14.5px;line-height:1.6;color:#3a332c;}
 
 /* ===== Detail page hero band ===== */
-.detail-band{
-  background:
-    radial-gradient(circle at 90% 10%, rgba(232,163,61,0.16), transparent 50%),
-    var(--cream-dim);
-  color:var(--bright);padding:52px 0 64px;border-bottom:1px solid var(--line);
-  margin-bottom:16px;
-}
-.detail-band .badge{background:rgba(232,163,61,0.16);color:var(--gold-light);}
-.back-link{font-family:'IBM Plex Mono';font-size:12px;letter-spacing:.05em;color:var(--gold-light);display:inline-flex;align-items:center;gap:6px;margin-bottom:18px;}
-.back-link:hover{color:var(--bright);}
+.detail-band{background:var(--maroon);color:var(--white);padding:52px 0 40px;}
+.detail-band .badge{border-color:var(--gold-light);color:var(--gold-light);}
+.back-link{font-family:'JetBrains Mono';font-size:12px;letter-spacing:.06em;color:var(--gold-light);display:inline-flex;align-items:center;gap:6px;margin-bottom:18px;}
+.back-link:hover{color:var(--white);}
 
 /* Sponsor tiers */
 .sponsor-tier-head{display:flex;align-items:center;gap:14px;margin:44px 0 20px;}
 .sponsor-tier-head:first-child{margin-top:0;}
 .sponsor-tier-head .line{flex:1;height:1px;background:var(--line);}
-.sponsor-tier-head h3{font-family:'IBM Plex Mono';font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
-.sponsor-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:22px;text-align:center;}
-.sponsor-card .logo-fallback{width:56px;height:56px;margin:0 auto 12px;background:var(--navy);color:var(--bright);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:20px;}
+.sponsor-card{background:var(--white);border:1px solid var(--line);padding:22px;text-align:center;}
+.sponsor-card .logo-fallback{width:56px;height:56px;margin:0 auto 12px;background:var(--maroon);color:var(--white);display:flex;align-items:center;justify-content:center;font-family:'Anton';font-size:20px;}
 
 /* Admin */
-.admin-shell{display:grid;grid-template-columns:220px 1fr;min-height:70vh;gap:0;border:1px solid var(--line);border-radius:var(--radius);background:var(--white);overflow:hidden;}
+.admin-shell{display:grid;grid-template-columns:220px 1fr;min-height:70vh;gap:0;border:1px solid var(--line);background:var(--white);}
 @media(max-width:800px){.admin-shell{grid-template-columns:1fr;}}
-.admin-sidenav{background:var(--ink);padding:22px 0;}
-.admin-sidenav button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--slate);padding:12px 22px;font-family:'IBM Plex Mono';font-size:12px;letter-spacing:.05em;text-transform:uppercase;border-left:3px solid transparent;}
-.admin-sidenav button:hover{color:var(--bright);}
-.admin-sidenav button.active{color:var(--gold-light);border-left-color:var(--gold);background:rgba(232,163,61,0.06);}
-.admin-main{padding:32px;}
+.admin-sidenav{background:var(--ink);color:var(--cream);padding:22px 0;}
+.admin-sidenav button{display:block;width:100%;text-align:left;background:none;border:none;color:#C9BFA9;padding:12px 22px;font-family:'JetBrains Mono';font-size:12px;letter-spacing:.06em;text-transform:uppercase;border-left:3px solid transparent;}
+.admin-sidenav button:hover{color:var(--gold-light);}
+.admin-sidenav button.active{color:var(--gold-light);border-left-color:var(--gold);background:rgba(255,255,255,.04);}
+.admin-main{padding:34px;}
 .admin-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:14px;}
-.reg-item{border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px;background:var(--white);}
+.reg-item{border:1px solid var(--line);padding:18px;margin-bottom:14px;}
 .reg-item .rtop{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:flex-start;}
-.reg-item .rname{font-family:'Oswald';font-size:17px;font-weight:600;text-transform:uppercase;color:var(--bright);}
-.reg-item .rmeta{font-family:'IBM Plex Mono';font-size:11.5px;color:var(--slate);margin-top:4px;}
+.reg-item .rname{font-family:'Anton';font-size:18px;text-transform:uppercase;}
+.reg-item .rmeta{font-family:'JetBrains Mono';font-size:11.5px;color:#8a7f6e;margin-top:4px;}
 .reg-item .ractions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
-.btn-approve{background:var(--green-deep);color:var(--bright);padding:8px 16px;border:none;border-radius:var(--radius);font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.04em;text-transform:uppercase;}
-.btn-approve:hover{background:#276e4c;}
-.btn-reject{background:var(--clay);color:var(--bright);padding:8px 16px;border:none;border-radius:var(--radius);font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.04em;text-transform:uppercase;}
-.btn-reject:hover{background:#a83a26;}
-.btn-del{background:transparent;color:var(--maroon);padding:8px 16px;border:1px solid var(--clay);border-radius:var(--radius);font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.04em;text-transform:uppercase;}
-.btn-ghost{background:var(--cream-dim);color:var(--bright);padding:8px 16px;border:1px solid var(--line);border-radius:var(--radius);font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.04em;text-transform:uppercase;}
-.thumb-link{font-family:'IBM Plex Mono';font-size:11px;color:var(--gold-light);text-decoration:underline;cursor:pointer;}
-.player-id-tag{font-family:'IBM Plex Mono';background:var(--gold);color:var(--ink);padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.04em;}
-.empty-state{text-align:center;padding:60px 20px;color:var(--slate);}
+.btn-approve{background:var(--green);color:var(--white);padding:8px 16px;border:none;font-family:'JetBrains Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
+.btn-reject{background:#B0463C;color:var(--white);padding:8px 16px;border:none;font-family:'JetBrains Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
+.btn-del{background:transparent;color:#B0463C;padding:8px 16px;border:1px solid #B0463C;font-family:'JetBrains Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
+.btn-ghost{background:transparent;color:var(--ink);padding:8px 16px;border:1px solid var(--line);font-family:'JetBrains Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
+.thumb-link{font-family:'JetBrains Mono';font-size:11px;color:var(--maroon);text-decoration:underline;cursor:pointer;}
+.player-id-tag{font-family:'JetBrains Mono';background:var(--gold);color:var(--ink);padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:.05em;}
+.empty-state{text-align:center;padding:60px 20px;color:#8a7f6e;}
 .empty-state .em-icon{font-size:40px;margin-bottom:14px;}
-.loading-dots{font-family:'IBM Plex Mono';color:var(--slate);padding:40px;text-align:center;}
-.modal-backdrop{position:fixed;inset:0;background:rgba(11,20,31,.82);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
-.modal-box{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);max-width:480px;width:100%;padding:30px;max-height:88vh;overflow:auto;}
-.modal-box img{width:100%;border:1px solid var(--line);border-radius:var(--radius);margin-top:12px;}
-.close-x{float:right;background:none;border:none;font-size:20px;color:var(--slate);cursor:pointer;}
-.stat-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;}
-.stat-box{background:var(--cream-dim);border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;min-width:120px;}
-.stat-box .n{font-family:'Oswald';font-weight:700;font-size:30px;color:var(--gold);}
-.stat-box .l{font-family:'IBM Plex Mono';font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--slate);margin-top:4px;}
+.loading-dots{font-family:'JetBrains Mono';color:#8a7f6e;padding:40px;text-align:center;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(20,16,13,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:var(--white);max-width:480px;width:100%;padding:30px;max-height:88vh;overflow:auto;}
+.modal-box img{width:100%;border:1px solid var(--line);margin-top:12px;}
+.close-x{float:right;background:none;border:none;font-size:20px;color:var(--ink);cursor:pointer;}
+.stat-row{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:10px;}
+.stat-box{background:var(--cream-dim);border:1px solid var(--line);padding:16px 20px;min-width:120px;}
+.stat-box .n{font-family:'Anton';font-size:30px;color:var(--maroon);}
+.stat-box .l{font-family:'JetBrains Mono';font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#8a7f6e;margin-top:4px;}
 @media print{.topbar,.ticker-wrap,footer,.no-print{display:none;}}
 </style>
 </head>
@@ -867,7 +845,7 @@ function renderShell(bodyHtml){
         <div class="fgrid">
           <div>
             <h4>Prateek Laurel Sports Fest 2026</h4>
-            <p style="max-width:360px;font-size:14px;line-height:1.7;color:var(--slate);">15–31 August 2026 · Prateek Laurel Apartments. A society-wide celebration of running, field games, and indoor &amp; outdoor sport — for every age group, every flat.</p>
+            <p style="max-width:360px;font-size:14px;line-height:1.7;color:#9d9184;">15–31 August 2026 · Prateek Laurel Apartments. A society-wide celebration of running, field games, and indoor &amp; outdoor sport — for every age group, every flat.</p>
           </div>
           <div>
             <h4>Explore</h4>
@@ -1011,7 +989,7 @@ async function renderSportsIndex(){
     <div class="detail-band">
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">All Sports</div>
-        <h1 class="h-lg" style="color:var(--bright)">Ten events. One fest.</h1>
+        <h1 class="h-lg" style="color:var(--white)">Ten events. One fest.</h1>
       </div>
     </div>
     <section class="wrap">
@@ -1033,8 +1011,8 @@ async function renderSportDetail(id){
       <div class="wrap">
         <a href="#sports" class="back-link">← All Sports</a>
         <span class="badge">${s.dateLabel}</span>
-        <h1 class="h-lg" style="color:var(--bright);margin-top:12px;">${s.icon} ${s.name}</h1>
-        <p style="max-width:600px;color:var(--slate);margin-top:12px;font-size:15.5px;">${s.tagline}</p>
+        <h1 class="h-lg" style="color:var(--white);margin-top:12px;">${s.icon} ${s.name}</h1>
+        <p style="max-width:600px;color:#EADFC8;margin-top:12px;font-size:15.5px;">${s.tagline}</p>
         <div class="hero-ctas" style="margin-top:24px;">
           ${s.registration.mode==='form' ? `<a href="#register/${s.id}" class="btn btn-primary">Register for ${s.name}</a>` : ''}
           ${s.registration.mode==='onspot' ? `<span class="badge gold">Register on the spot</span>` : ''}
@@ -1061,8 +1039,8 @@ async function renderSchedule(){
     <div class="detail-band">
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Schedule</div>
-        <h1 class="h-lg" style="color:var(--bright)">15 – 31 August, day by day</h1>
-        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Several indoor sports don't have a locked date yet — those will be confirmed on the Updates page as soon as the Committee finalises fixtures.</p>
+        <h1 class="h-lg" style="color:var(--white)">15 – 31 August, day by day</h1>
+        <p style="color:#EADFC8;margin-top:10px;max-width:560px;">Several indoor sports don't have a locked date yet — those will be confirmed on the Updates page as soon as the Committee finalises fixtures.</p>
       </div>
     </div>
     <section class="wrap">
@@ -1087,7 +1065,7 @@ async function renderRulesIndex(){
     <div class="detail-band">
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Rulebooks</div>
-        <h1 class="h-lg" style="color:var(--bright)">Full rules, by sport</h1>
+        <h1 class="h-lg" style="color:var(--white)">Full rules, by sport</h1>
       </div>
     </div>
     <section class="wrap">
@@ -1113,7 +1091,7 @@ async function renderFixtures(){
     <div class="detail-band">
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Fixtures &amp; Results</div>
-        <h1 class="h-lg" style="color:var(--bright)">Who's playing, who won</h1>
+        <h1 class="h-lg" style="color:var(--white)">Who's playing, who won</h1>
       </div>
     </div>
     <section class="wrap">
@@ -1153,9 +1131,9 @@ async function renderFxList(){
     return `<div class="data-row">
       <div class="mono" style="font-size:13px;color:var(--maroon);">${fmtDate(f.date)}${f.time?(' · '+f.time):''}</div>
       <div>
-        <strong style="font-family:'Oswald';text-transform:uppercase;font-size:16px;">${sp?sp.icon+' '+sp.name:f.sport_id}</strong>
-        <div style="font-size:13.5px;color:var(--slate);margin-top:3px;">${esc(f.participants_text||'')}</div>
-        <div style="font-size:12.5px;color:var(--slate);margin-top:3px;">📍 ${esc(f.venue||'TBA')}</div>
+        <strong style="font-family:'Anton';text-transform:uppercase;font-size:16px;">${sp?sp.icon+' '+sp.name:f.sport_id}</strong>
+        <div style="font-size:13.5px;color:#5a5148;margin-top:3px;">${esc(f.participants_text||'')}</div>
+        <div style="font-size:12.5px;color:#8a7f6e;margin-top:3px;">📍 ${esc(f.venue||'TBA')}</div>
         ${f.result ? `<div style="margin-top:8px;font-size:13.5px;background:var(--cream-dim);padding:8px 10px;border-left:3px solid var(--gold);"><strong>Result:</strong> ${esc(f.result)}</div>` : ''}
       </div>
       <div><span class="badge ${f.status==='completed'?'green':'maroon'}">${f.status}</span></div>
@@ -1177,7 +1155,7 @@ async function renderUpdates(highlightId){
     <div class="detail-band">
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Updates</div>
-        <h1 class="h-lg" style="color:var(--bright)">Announcements &amp; news</h1>
+        <h1 class="h-lg" style="color:var(--white)">Announcements &amp; news</h1>
       </div>
     </div>
     <section class="wrap">
@@ -1212,7 +1190,7 @@ async function renderUpdatesList(highlightId){
     <div class="card" id="upd-${u.id}" style="margin-bottom:16px;${highlightId===u.id?'border-color:var(--gold);box-shadow:0 0 0 3px rgba(192,138,46,.25);':''}">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <span class="badge ${u.category==='result'?'green':(u.category==='schedule-change'?'maroon':'gold')}">${UPDATE_CAT_LABEL[u.category]||u.category}</span>
-        <span class="mono" style="font-size:11.5px;color:var(--slate);">${fmtDate(u.date)}</span>
+        <span class="mono" style="font-size:11.5px;color:#8a7f6e;">${fmtDate(u.date)}</span>
       </div>
       <h3 style="margin-top:12px;font-size:20px;">${esc(u.title)}</h3>
       <p style="white-space:pre-wrap;">${esc(u.body)}</p>
@@ -1234,8 +1212,8 @@ async function renderSponsors(){
     <div class="detail-band">
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Sponsors</div>
-        <h1 class="h-lg" style="color:var(--bright)">Backed by our community</h1>
-        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Want to support the Fest — awards, refreshments, jerseys, or a stall on event day? We'd love to have you.</p>
+        <h1 class="h-lg" style="color:var(--white)">Backed by our community</h1>
+        <p style="color:#EADFC8;margin-top:10px;max-width:560px;">Want to support the Fest — awards, refreshments, jerseys, or a stall on event day? We'd love to have you.</p>
         <a href="#contact" class="btn btn-primary" style="margin-top:20px;">Become a Sponsor</a>
       </div>
     </div>
@@ -1260,8 +1238,8 @@ async function renderSponsors(){
         <div class="sponsor-card">
           ${s.logo_url ? `<img src="${s.logo_url}" style="width:56px;height:56px;object-fit:contain;margin:0 auto 12px;">` : `<div class="logo-fallback">${esc((s.name||'?')[0])}</div>`}
           <h3 style="font-size:18px;">${esc(s.name)}</h3>
-          ${s.blurb ? `<p style="font-size:13.5px;color:var(--slate);margin-top:8px;">${esc(s.blurb)}</p>` : ''}
-          ${s.website ? `<a href="${s.website}" target="_blank" style="display:inline-block;margin-top:10px;font-family:'IBM Plex Mono';font-size:11.5px;color:var(--maroon);">Visit →</a>` : ''}
+          ${s.blurb ? `<p style="font-size:13.5px;color:#5a5148;margin-top:8px;">${esc(s.blurb)}</p>` : ''}
+          ${s.website ? `<a href="${s.website}" target="_blank" style="display:inline-block;margin-top:10px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--maroon);">Visit →</a>` : ''}
         </div>`).join('')}
     </div>`;
   });
@@ -1276,7 +1254,7 @@ async function renderContact(){
     <div class="detail-band">
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Contact</div>
-        <h1 class="h-lg" style="color:var(--bright)">Reach the Sports Committee</h1>
+        <h1 class="h-lg" style="color:var(--white)">Reach the Sports Committee</h1>
       </div>
     </div>
     <section class="wrap">
@@ -1312,8 +1290,8 @@ async function renderRegister(preSportId){
     <div class="detail-band">
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Register</div>
-        <h1 class="h-lg" style="color:var(--bright)">Sign up for an event</h1>
-        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Fill the form, pay if there's a fee, and upload your payment screenshot. Organisers verify each payment before your Player ID is issued.</p>
+        <h1 class="h-lg" style="color:var(--white)">Sign up for an event</h1>
+        <p style="color:#EADFC8;margin-top:10px;max-width:560px;">Fill the form, pay if there's a fee, and upload your payment screenshot. Organisers verify each payment before your Player ID is issued.</p>
       </div>
     </div>
     <section class="wrap">
@@ -1462,13 +1440,13 @@ async function updateRegForm(sportId){
     payArea.innerHTML = `
       <div class="field">
         <label>4. Payment — ₹${ev.fee}</label>
-        <div class="qr-box" id="qrHost"><p class="mono" style="font-size:12px;color:var(--slate);">Loading payment QR…</p></div>
+        <div class="qr-box" id="qrHost"><p class="mono" style="font-size:12px;color:#8a7f6e;">Loading payment QR…</p></div>
         <p class="hint">Scan and pay ₹${ev.fee} via UPI, then upload a screenshot of the successful payment below.</p>
       </div>
       <div class="field">
         <label>Upload Payment Screenshot</label>
         <div class="upload-box" id="uploadBox">
-          <p class="mono" style="font-size:12.5px;color:var(--slate);">📎 Click to upload payment screenshot (JPG/PNG)</p>
+          <p class="mono" style="font-size:12.5px;color:#8a7f6e;">📎 Click to upload payment screenshot (JPG/PNG)</p>
           <input type="file" id="uploadInput" accept="image/*" style="display:none;">
         </div>
       </div>`;
@@ -1487,7 +1465,7 @@ async function updateRegForm(sportId){
         box.innerHTML = `<img src="${dataUrl}" style="max-height:180px;margin:0 auto;"><p class="mono" style="font-size:11px;color:var(--green);margin-top:8px;">✓ Screenshot attached — click to replace</p>`;
         box.addEventListener('click', ()=>input.click());
       }catch(e){
-        box.innerHTML = `<p class="mono" style="font-size:12px;color:var(--maroon);">Couldn't read that image, please try again.</p>`;
+        box.innerHTML = `<p class="mono" style="font-size:12px;color:#B0463C;">Couldn't read that image, please try again.</p>`;
       }
     });
   }
@@ -1498,14 +1476,14 @@ async function renderPaymentQR(amount, sportName){
   if(!host) return;
   const settings = await getSettings();
   if(!settings.upiId){
-    host.innerHTML = `<p class="mono" style="font-size:12px;color:var(--maroon);">Payment QR isn't configured yet. Please contact the organisers directly to pay for now.</p>`;
+    host.innerHTML = `<p class="mono" style="font-size:12px;color:#B0463C;">Payment QR isn't configured yet. Please contact the organisers directly to pay for now.</p>`;
     return;
   }
   const upiUrl = `upi://pay?pa=${encodeURIComponent(settings.upiId)}&pn=${encodeURIComponent('Prateek Laurel Sports Fest')}&am=${amount}&cu=INR&tn=${encodeURIComponent(sportName+' registration')}`;
   host.innerHTML = `<canvas id="qrCanvas"></canvas><p class="mono" style="font-size:12px;margin-top:10px;">${esc(settings.upiId)}</p><p class="mono" style="font-size:15px;font-weight:700;color:var(--maroon);">₹${amount}</p>`;
   try{
-    new QRious({element: document.getElementById('qrCanvas'), value: upiUrl, size:200, foreground:'#0B141F', background:'#F5F3EC'});
-  }catch(e){ host.innerHTML += `<p class="mono" style="font-size:11px;color:var(--maroon);">QR generation failed — pay via UPI ID above.</p>`; }
+    new QRious({element: document.getElementById('qrCanvas'), value: upiUrl, size:200, foreground:'#201A17', background:'#FFFDF9'});
+  }catch(e){ host.innerHTML += `<p class="mono" style="font-size:11px;color:#B0463C;">QR generation failed — pay via UPI ID above.</p>`; }
 }
 
 async function submitRegistration(sportId){
@@ -1618,7 +1596,7 @@ async function checkRegStatus(){
   if(!data || !data.length){ host.innerHTML = `<div class="msg-banner info">No registrations found for that number.</div>`; return; }
   host.innerHTML = data.map(r=>`
     <div style="border:1px solid var(--line);padding:12px;margin-top:10px;background:var(--white);">
-      <strong style="font-family:'Oswald';text-transform:uppercase;">${esc(r.sport_name)} — ${esc(r.event_label)}</strong>
+      <strong style="font-family:'Anton';text-transform:uppercase;">${esc(r.sport_name)} — ${esc(r.event_label)}</strong>
       <div class="mono" style="font-size:11.5px;margin-top:6px;">
         Status: <span class="badge ${r.status==='approved'?'green':(r.status==='rejected'?'maroon':'gold')}">${r.status}</span>
       </div>
@@ -1651,7 +1629,7 @@ async function renderAdmin(){
       const email = document.getElementById('adminEmail').value.trim();
       const pass = document.getElementById('adminPass').value;
       const msg = document.getElementById('adminLoginMsg');
-      msg.innerHTML = `<p class="mono" style="font-size:12px;color:var(--slate);">Signing in…</p>`;
+      msg.innerHTML = `<p class="mono" style="font-size:12px;color:#8a7f6e;">Signing in…</p>`;
       const {ok, error} = await adminSignIn(email, pass);
       if(ok){ STATE.adminAuthed = true; renderAdminPanel(); }
       else{ msg.innerHTML = `<div class="msg-banner err">${esc(error?.message || 'Could not sign in.')}</div>`; }
@@ -1852,7 +1830,7 @@ async function adminUpdates(){
       <div class="rtop">
         <div><div class="rname" style="font-size:16px;">${esc(u.title)}</div><div class="rmeta">${UPDATE_CAT_LABEL[u.category]} · ${fmtDateTime(u.date)}${u.pinned?' · 📌 Pinned':''}</div></div>
       </div>
-      <p style="font-size:13.5px;margin-top:8px;color:var(--slate);">${esc(u.body)}</p>
+      <p style="font-size:13.5px;margin-top:8px;color:#3a332c;">${esc(u.body)}</p>
       <div class="ractions"><button class="btn-del" data-del-upd="${u.id}">Delete</button></div>
     </div>`).join('');
   host.querySelectorAll('[data-del-upd]').forEach(el=>{
@@ -1931,7 +1909,7 @@ async function adminSponsors(){
       <div class="field"><label>Short blurb (optional)</label><textarea id="spBlurb" rows="2"></textarea></div>
       <div class="field">
         <label>Logo (optional)</label>
-        <div class="upload-box" id="spLogoBox"><p class="mono" style="font-size:12px;color:var(--slate);">📎 Click to upload logo</p><input type="file" id="spLogoInput" accept="image/*" style="display:none;"></div>
+        <div class="upload-box" id="spLogoBox"><p class="mono" style="font-size:12px;color:#8a7f6e;">📎 Click to upload logo</p><input type="file" id="spLogoInput" accept="image/*" style="display:none;"></div>
       </div>
       <button class="btn btn-primary" id="spAddBtn">Add Sponsor</button>
     </div>
@@ -1986,7 +1964,7 @@ async function adminPhotos(){
     <div class="form-card" style="max-width:640px;padding:22px;margin-bottom:36px;">
       <div class="field">
         <label>Photo</label>
-        <div class="upload-box" id="phBox"><p class="mono" style="font-size:12px;color:var(--slate);">📎 Click to upload a photo</p><input type="file" id="phInput" accept="image/*" style="display:none;"></div>
+        <div class="upload-box" id="phBox"><p class="mono" style="font-size:12px;color:#8a7f6e;">📎 Click to upload a photo</p><input type="file" id="phInput" accept="image/*" style="display:none;"></div>
       </div>
       <div class="field"><label>Caption</label><input type="text" id="phCaption"></div>
       <button class="btn btn-primary" id="phAddBtn">Post Photo</button>
@@ -2068,8 +2046,8 @@ async function render(){
       <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--cream);padding:40px 20px;">
         <div style="max-width:520px;">
           <div class="eyebrow" style="color:var(--gold-light)">Setup needed</div>
-          <h1 class="h-md" style="color:var(--bright);">Connect Supabase to launch this site</h1>
-          <p style="margin-top:14px;color:var(--slate);font-size:15px;line-height:1.6;">
+          <h1 class="h-md" style="color:var(--white);">Connect Supabase to launch this site</h1>
+          <p style="margin-top:14px;color:#C9BFA9;font-size:15px;line-height:1.6;">
             Open <code style="background:#000;padding:2px 6px;">index.html</code>, find <code style="background:#000;padding:2px 6px;">SUPABASE_URL</code> and
             <code style="background:#000;padding:2px 6px;">SUPABASE_ANON_KEY</code> near the top of the script, and paste in the values from your
             Supabase project's <strong>Settings → API</strong> page. See README.md for the full walkthrough.
