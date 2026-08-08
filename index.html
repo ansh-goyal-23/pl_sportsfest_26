@@ -574,8 +574,9 @@ const SPORTS = [
     categories:[{id:'u14',label:'Under 14 (doubles only)'},{id:'open',label:'Open'}],
     events:[
       {id:'singles', label:"Singles — Men's / Women's (Open only)", teamSize:1, fee:300, genderRule:'choose'},
-      {id:'doubles', label:'Doubles (Mixed allowed in Open)', teamSize:2, fee:600, genderRule:'chooseOrMixed'}
-    ]
+      {id:'doubles', label:'Doubles', teamSize:2, fee:600, genderRule:'chooseOrMixed', mixedCategories:['open']}
+    ],
+    eventsByCategory: { 'u14': ['doubles'], 'open': ['singles','doubles'] }
   },
   rulesHtml:`
     <h4>Categories &amp; events</h4>
@@ -1343,7 +1344,7 @@ function renderRegDynamic(sportId){
     </div>
     <div class="field">
       <label>3. Event</label>
-      <select id="regEvent">${cfg.events.map(e=>`<option value="${e.id}">${e.label}</option>`).join('')}</select>
+      <select id="regEvent"></select>
     </div>
     <div id="regGenderWrap"></div>
     <div id="regParticipants"></div>
@@ -1355,10 +1356,28 @@ function renderRegDynamic(sportId){
     <div id="regMsgArea"></div>
     <button class="btn btn-primary" id="regSubmitBtn" style="width:100%;justify-content:center;margin-top:10px;">Submit Registration</button>
   `;
-  document.getElementById('regCategory').addEventListener('change', ()=>updateRegForm(sportId));
+  rebuildEventOptions(sportId);
+  document.getElementById('regCategory').addEventListener('change', ()=>{ rebuildEventOptions(sportId); updateRegForm(sportId); });
   document.getElementById('regEvent').addEventListener('change', ()=>updateRegForm(sportId));
   updateRegForm(sportId);
   document.getElementById('regSubmitBtn').addEventListener('click', ()=>submitRegistration(sportId));
+}
+
+function getAllowedEvents(cfg, catId){
+  if(cfg.eventsByCategory && cfg.eventsByCategory[catId]){
+    return cfg.events.filter(e=>cfg.eventsByCategory[catId].includes(e.id));
+  }
+  return cfg.events;
+}
+function rebuildEventOptions(sportId){
+  const s = getSport(sportId);
+  const cfg = s.registration;
+  const catId = document.getElementById('regCategory').value;
+  const allowed = getAllowedEvents(cfg, catId);
+  const evSel = document.getElementById('regEvent');
+  const prevVal = evSel.value;
+  evSel.innerHTML = allowed.map(e=>`<option value="${e.id}">${e.label}</option>`).join('');
+  evSel.value = allowed.some(e=>e.id===prevVal) ? prevVal : allowed[0].id;
 }
 
 function currentEventConfig(sportId){
@@ -1385,7 +1404,8 @@ async function updateRegForm(sportId){
   }else if(ev.genderRule==='choose'){
     genderWrap.innerHTML = `<div class="field"><label>Gender Category</label><select id="regGenderCat"><option value="boys">Male</option><option value="girls">Female</option></select></div>`;
   }else if(ev.genderRule==='chooseOrMixed'){
-    genderWrap.innerHTML = `<div class="field"><label>Gender Category</label><select id="regGenderCat"><option value="boys">Male</option><option value="girls">Female</option><option value="mixed">Mixed (one of each)</option></select></div>`;
+    const mixedOk = !ev.mixedCategories || ev.mixedCategories.includes(catSel.value);
+    genderWrap.innerHTML = `<div class="field"><label>Gender Category</label><select id="regGenderCat"><option value="boys">Male</option><option value="girls">Female</option>${mixedOk?'<option value="mixed">Mixed (one of each)</option>':''}</select></div>`;
   }else if(ev.genderRule==='male'||ev.genderRule==='female'){
     genderWrap.innerHTML = `<p class="hint" style="margin-bottom:14px;">${ev.label} — participants must be ${ev.genderRule}.</p>`;
   }else if(ev.genderRule==='mixed'){
