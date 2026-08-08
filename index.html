@@ -300,8 +300,8 @@ textarea{resize:vertical;min-height:90px;}
 /* ---------- Supabase client ----------
    Fill these in from Supabase Dashboard → Project Settings → API,
    then redeploy. See README.md for the full setup walkthrough. */
-const SUPABASE_URL = 'https://dthbsvdvjjtdwfrjsaga.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aGJzdmR2amp0ZHdmcmpzYWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU2OTgsImV4cCI6MjEwMTc5MTY5OH0.QWyLlSNBf7shrTn76jUHxF_pyil28g2kWlsOMgJDlD0';
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 const CONFIG_READY = !SUPABASE_URL.startsWith('YOUR_') && !SUPABASE_ANON_KEY.startsWith('YOUR_');
 // Falls back to a harmless placeholder URL when not yet configured, so the
 // Supabase client library doesn't throw at load time — render() below shows
@@ -480,11 +480,12 @@ const SPORTS = [
   tagline:'50m Race, Relay Race and Long Jump for kids — boys and girls compete separately.',
   registration:{
     mode:'form',
+    categoryIsGender:true,
     categories:[{id:'boys',label:'Boys'},{id:'girls',label:'Girls'}],
     events:[
-      {id:'50m', label:'50m Race', teamSize:1, fee:0},
-      {id:'relay', label:'Relay Race (3 per team)', teamSize:3, fee:0},
-      {id:'longjump', label:'Long Jump', teamSize:1, fee:0}
+      {id:'50m', label:'50m Race', teamSize:1, fee:0, genderRule:'any'},
+      {id:'relay', label:'Relay Race (3 per team)', teamSize:3, fee:0, genderRule:'any'},
+      {id:'longjump', label:'Long Jump', teamSize:1, fee:0, genderRule:'any'}
     ]
   },
   rulesHtml:`
@@ -515,8 +516,7 @@ const SPORTS = [
   registration:{
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
-    events:[{id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, fee:600}],
-    genderField:true
+    events:[{id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, fee:600, genderRule:'choose'}]
   },
   rulesHtml:`
     <h4>Categories</h4>
@@ -573,10 +573,9 @@ const SPORTS = [
     mode:'form',
     categories:[{id:'u14',label:'Under 14 (doubles only)'},{id:'open',label:'Open'}],
     events:[
-      {id:'singles', label:"Singles — Men's / Women's (Open only)", teamSize:1, fee:300},
-      {id:'doubles', label:'Doubles (Mixed allowed in Open)', teamSize:2, fee:600}
-    ],
-    genderField:true
+      {id:'singles', label:"Singles — Men's / Women's (Open only)", teamSize:1, fee:300, genderRule:'choose'},
+      {id:'doubles', label:'Doubles (Mixed allowed in Open)', teamSize:2, fee:600, genderRule:'chooseOrMixed'}
+    ]
   },
   rulesHtml:`
     <h4>Categories &amp; events</h4>
@@ -612,11 +611,11 @@ const SPORTS = [
     mode:'form',
     categories:[{id:'7-10',label:'Age 7–10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
     events:[
-      {id:'ms', label:"Men's Singles", teamSize:1, fee:300},
-      {id:'ws', label:"Women's Singles", teamSize:1, fee:300},
-      {id:'md', label:"Men's Doubles", teamSize:2, fee:600},
-      {id:'wd', label:"Women's Doubles", teamSize:2, fee:600},
-      {id:'xd', label:'Mixed Doubles', teamSize:2, fee:600}
+      {id:'ms', label:"Men's Singles", teamSize:1, fee:300, genderRule:'male'},
+      {id:'ws', label:"Women's Singles", teamSize:1, fee:300, genderRule:'female'},
+      {id:'md', label:"Men's Doubles", teamSize:2, fee:600, genderRule:'male'},
+      {id:'wd', label:"Women's Doubles", teamSize:2, fee:600, genderRule:'female'},
+      {id:'xd', label:'Mixed Doubles', teamSize:2, fee:600, genderRule:'mixed'}
     ]
   },
   rulesHtml:`
@@ -642,10 +641,10 @@ const SPORTS = [
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
     events:[
-      {id:'ms', label:"Men's Singles", teamSize:1, fee:300},
-      {id:'ws', label:"Women's Singles", teamSize:1, fee:300},
-      {id:'md', label:"Men's Doubles", teamSize:2, fee:600},
-      {id:'wd', label:"Women's Doubles", teamSize:2, fee:600}
+      {id:'ms', label:"Men's Singles", teamSize:1, fee:300, genderRule:'male'},
+      {id:'ws', label:"Women's Singles", teamSize:1, fee:300, genderRule:'female'},
+      {id:'md', label:"Men's Doubles", teamSize:2, fee:600, genderRule:'male'},
+      {id:'wd', label:"Women's Doubles", teamSize:2, fee:600, genderRule:'female'}
     ]
   },
   rulesHtml:`
@@ -667,7 +666,7 @@ const SPORTS = [
   registration:{
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'}],
-    events:[{id:'chess', label:'Chess', teamSize:1, fee:300}]
+    events:[{id:'chess', label:'Chess', teamSize:1, fee:300, genderRule:'any'}]
   },
   rulesHtml:`
     <h4>Categories</h4><p>Under 10 and Open.</p>
@@ -687,8 +686,8 @@ const SPORTS = [
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'}],
     events:[
-      {id:'singles', label:'Singles', teamSize:1, fee:300},
-      {id:'doubles', label:'Doubles', teamSize:2, fee:600}
+      {id:'singles', label:'Singles', teamSize:1, fee:300, genderRule:'any'},
+      {id:'doubles', label:'Doubles', teamSize:2, fee:600, genderRule:'any'}
     ]
   },
   rulesHtml:`
@@ -708,7 +707,7 @@ const SPORTS = [
   registration:{
     mode:'form',
     categories:[{id:'open',label:'Open'}],
-    events:[{id:'singles', label:'Singles', teamSize:1, fee:300}]
+    events:[{id:'singles', label:'Singles', teamSize:1, fee:300, genderRule:'any'}]
   },
   rulesHtml:`
     <h4>Category</h4><p>Open, Singles — individual registration.</p>
@@ -737,6 +736,23 @@ const SPORTS = [
 ];
 
 function getSport(id){ return SPORTS.find(s=>s.id===id); }
+
+/* Age bounds implied by each category, keyed by category id (shared
+   across sports since the ids mean the same thing everywhere they
+   appear). Categories not listed here (e.g. "open", "boys"/"girls")
+   have no enforced age bound. */
+const AGE_CATEGORY_RULES = {
+  'u10':  {max:10},
+  'u14':  {max:14},
+  '7-10': {min:7, max:10},
+  '60+':  {min:60},
+};
+function ageRuleMessage(catLabel, rule){
+  if(rule.min!=null && rule.max!=null) return `${catLabel} needs an age between ${rule.min} and ${rule.max}`;
+  if(rule.max!=null) return `${catLabel} needs an age of ${rule.max} or under`;
+  if(rule.min!=null) return `${catLabel} needs an age of ${rule.min} or above`;
+  return '';
+}
 </script>
 <script>
 /* =========================================================
@@ -1323,16 +1339,17 @@ function renderRegDynamic(sportId){
     <div class="field">
       <label>2. Category</label>
       <select id="regCategory">${cfg.categories.map(c=>`<option value="${c.id}">${c.label}</option>`).join('')}</select>
+      <div class="hint" id="regCategoryHint"></div>
     </div>
     <div class="field">
       <label>3. Event</label>
       <select id="regEvent">${cfg.events.map(e=>`<option value="${e.id}">${e.label}</option>`).join('')}</select>
     </div>
-    ${cfg.genderField ? `<div class="field"><label>Gender Category</label><select id="regGenderCat"><option value="boys">Boys / Men</option><option value="girls">Girls / Women</option></select></div>` : ''}
+    <div id="regGenderWrap"></div>
     <div id="regParticipants"></div>
     <div class="form-grid-2">
-      <div class="field"><label>Contact Phone Number</label><input type="tel" id="regPhone" placeholder="10-digit mobile number" required></div>
-      <div class="field"><label>Flat Number</label><input type="text" id="regFlat" placeholder="e.g. B-1204" required></div>
+      <div class="field"><label>Contact Phone Number *</label><input type="tel" id="regPhone" placeholder="10-digit mobile number" required maxlength="10"></div>
+      <div class="field"><label>Flat Number *</label><input type="text" id="regFlat" placeholder="e.g. B-1204" required></div>
     </div>
     <div id="regPaymentArea"></div>
     <div id="regMsgArea"></div>
@@ -1352,10 +1369,30 @@ function currentEventConfig(sportId){
 
 async function updateRegForm(sportId){
   const s = getSport(sportId);
+  const cfg = s.registration;
   const ev = currentEventConfig(sportId);
   const catSel = document.getElementById('regCategory');
   const isFree = ev.fee===0 || catSel.value==='60+';
   const teamSize = ev.teamSize;
+
+  const catObj = cfg.categories.find(c=>c.id===catSel.value);
+  const ageRule = AGE_CATEGORY_RULES[catSel.value];
+  document.getElementById('regCategoryHint').textContent = ageRule ? ageRuleMessage(catObj?catObj.label:catSel.value, ageRule) : '';
+
+  const genderWrap = document.getElementById('regGenderWrap');
+  if(cfg.categoryIsGender){
+    genderWrap.innerHTML = `<p class="hint" style="margin-bottom:14px;">Registering under <strong>${esc(catObj?catObj.label:catSel.value)}</strong> — every participant below should be ${catSel.value==='boys'?'male':'female'}.</p>`;
+  }else if(ev.genderRule==='choose'){
+    genderWrap.innerHTML = `<div class="field"><label>Gender Category</label><select id="regGenderCat"><option value="boys">Male</option><option value="girls">Female</option></select></div>`;
+  }else if(ev.genderRule==='chooseOrMixed'){
+    genderWrap.innerHTML = `<div class="field"><label>Gender Category</label><select id="regGenderCat"><option value="boys">Male</option><option value="girls">Female</option><option value="mixed">Mixed (one of each)</option></select></div>`;
+  }else if(ev.genderRule==='male'||ev.genderRule==='female'){
+    genderWrap.innerHTML = `<p class="hint" style="margin-bottom:14px;">${ev.label} — participants must be ${ev.genderRule}.</p>`;
+  }else if(ev.genderRule==='mixed'){
+    genderWrap.innerHTML = `<p class="hint" style="margin-bottom:14px;">${ev.label} — needs exactly one male and one female player.</p>`;
+  }else{
+    genderWrap.innerHTML = '';
+  }
 
   const pWrap = document.getElementById('regParticipants');
   let fields = '';
@@ -1431,8 +1468,10 @@ async function renderPaymentQR(amount, sportName){
 
 async function submitRegistration(sportId){
   const s = getSport(sportId);
+  const cfg = s.registration;
   const ev = currentEventConfig(sportId);
   const catSel = document.getElementById('regCategory');
+  const catObj = cfg.categories.find(c=>c.id===catSel.value);
   const isFree = ev.fee===0 || catSel.value==='60+';
   const msgArea = document.getElementById('regMsgArea');
   const phone = document.getElementById('regPhone').value.trim();
@@ -1442,10 +1481,46 @@ async function submitRegistration(sportId){
   const genders = [...document.querySelectorAll('.p-gender')].map(i=>i.value);
   const teamNameEl = document.getElementById('regTeamName');
 
-  if(!phone || phone.length<10){ msgArea.innerHTML = `<div class="msg-banner err">Please enter a valid phone number.</div>`; return; }
-  if(!flat){ msgArea.innerHTML = `<div class="msg-banner err">Please enter your flat number.</div>`; return; }
-  if(names.some(n=>!n) || ages.some(a=>!a) || genders.some(g=>!g)){ msgArea.innerHTML = `<div class="msg-banner err">Please fill in all participant details.</div>`; return; }
+  // Mandatory contact fields
+  if(!/^\d{10}$/.test(phone)){ msgArea.innerHTML = `<div class="msg-banner err">Phone number is required — please enter a valid 10-digit number.</div>`; return; }
+  if(!flat){ msgArea.innerHTML = `<div class="msg-banner err">Flat number is required.</div>`; return; }
+  if(names.some(n=>!n) || ages.some(a=>!a) || genders.some(g=>!g)){ msgArea.innerHTML = `<div class="msg-banner err">Please fill in name, age and gender for every participant.</div>`; return; }
   if(!isFree && !REG_UPLOAD_FILE){ msgArea.innerHTML = `<div class="msg-banner err">Please upload your payment screenshot before submitting.</div>`; return; }
+
+  // Age vs category cross-check
+  const ageRule = AGE_CATEGORY_RULES[catSel.value];
+  if(ageRule){
+    const bad = ages.findIndex(a=>{ const n=Number(a); return (ageRule.min!=null && n<ageRule.min) || (ageRule.max!=null && n>ageRule.max); });
+    if(bad!==-1){
+      msgArea.innerHTML = `<div class="msg-banner err">${ageRuleMessage(catObj?catObj.label:catSel.value, ageRule)} — ${names.length>1?('Player '+(bad+1)+' ('+esc(names[bad])+')'):'this participant'} is ${ages[bad]}.</div>`;
+      return;
+    }
+  }
+
+  // Gender vs category/event cross-check
+  let requiredGender = null; // 'male' | 'female' | 'mixed' | null
+  if(cfg.categoryIsGender){
+    requiredGender = catSel.value==='boys' ? 'male' : 'female';
+  }else if(ev.genderRule==='male' || ev.genderRule==='female' || ev.genderRule==='mixed'){
+    requiredGender = ev.genderRule;
+  }else if(ev.genderRule==='choose' || ev.genderRule==='chooseOrMixed'){
+    const gcVal = document.getElementById('regGenderCat')?.value;
+    requiredGender = gcVal==='boys' ? 'male' : gcVal==='girls' ? 'female' : gcVal==='mixed' ? 'mixed' : null;
+  }
+  if(requiredGender==='male' || requiredGender==='female'){
+    const bad = genders.findIndex(g=>g!==requiredGender);
+    if(bad!==-1){
+      msgArea.innerHTML = `<div class="msg-banner err">This event requires all participants to be ${requiredGender} — ${names.length>1?('Player '+(bad+1)+' ('+esc(names[bad])+')'):'this participant'} is registered as ${genders[bad]||'unspecified'}. If this doesn't fit, please contact the organisers.</div>`;
+      return;
+    }
+  }else if(requiredGender==='mixed'){
+    const maleCount = genders.filter(g=>g==='male').length;
+    const femaleCount = genders.filter(g=>g==='female').length;
+    if(maleCount!==1 || femaleCount!==1){
+      msgArea.innerHTML = `<div class="msg-banner err">Mixed doubles needs exactly one male and one female player.</div>`;
+      return;
+    }
+  }
 
   const btn = document.getElementById('regSubmitBtn');
   btn.disabled = true; btn.textContent = 'Submitting…';
@@ -1641,6 +1716,7 @@ async function adminRegistrations(){
       ${r.player_id ? `<div style="margin-top:10px;"><span class="player-id-tag">${r.player_id}</span></div>` : ''}
       <div class="ractions">
         ${r.status==='pending' ? `<button class="btn-approve" data-approve="${r.id}">Approve & Issue Player ID</button><button class="btn-reject" data-reject="${r.id}">Reject</button>` : ''}
+        ${r.status==='approved' || r.status==='rejected' ? `<button class="btn-ghost" data-undo="${r.id}">↺ Undo — back to Pending</button>` : ''}
         <button class="btn-del" data-del-reg="${r.id}">Delete</button>
       </div>
     </div>`).join('');
@@ -1665,6 +1741,16 @@ async function adminRegistrations(){
       const r = all.find(x=>x.id===el.dataset.reject);
       const {ok} = await tUpdate('registrations', r.id, {status:'rejected'});
       if(ok) toast('Registration rejected', 'info'); else toast('Could not reject — try again', 'err');
+      adminRegistrations();
+    });
+  });
+  host.querySelectorAll('[data-undo]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const r = all.find(x=>x.id===el.dataset.undo);
+      const wasApproved = r.status==='approved';
+      if(!confirm(`Undo this ${r.status}? It will go back to Pending${wasApproved?' and its Player ID will be cleared':''}.`)) return;
+      const {ok} = await tUpdate('registrations', r.id, {status:'pending', player_id: null});
+      if(ok) toast('Reverted to Pending', 'info'); else toast('Could not undo — try again', 'err');
       adminRegistrations();
     });
   });
