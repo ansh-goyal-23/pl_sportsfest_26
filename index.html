@@ -300,8 +300,8 @@ textarea{resize:vertical;min-height:90px;}
 /* ---------- Supabase client ----------
    Fill these in from Supabase Dashboard → Project Settings → API,
    then redeploy. See README.md for the full setup walkthrough. */
-const SUPABASE_URL = 'https://dthbsvdvjjtdwfrjsaga.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0aGJzdmR2amp0ZHdmcmpzYWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMTU2OTgsImV4cCI6MjEwMTc5MTY5OH0.QWyLlSNBf7shrTn76jUHxF_pyil28g2kWlsOMgJDlD0';
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 const CONFIG_READY = !SUPABASE_URL.startsWith('YOUR_') && !SUPABASE_ANON_KEY.startsWith('YOUR_');
 // Falls back to a harmless placeholder URL when not yet configured, so the
 // Supabase client library doesn't throw at load time — render() below shows
@@ -322,9 +322,13 @@ async function tFetchAll(table, orderCol, ascending){
   return data || [];
 }
 async function tInsert(table, row){
-  const {data, error} = await sb.from(table).insert(row).select().single();
+  // Deliberately does NOT chain .select().single() after insert: for
+  // publicly-insertable tables (like registrations), anonymous visitors
+  // have an INSERT policy but no SELECT policy, so asking Postgres to
+  // read the row back would fail even though the write itself succeeded.
+  const {error} = await sb.from(table).insert(row);
   if(error){ console.error(table, error); return {ok:false, error}; }
-  return {ok:true, data};
+  return {ok:true};
 }
 async function tUpdate(table, id, patch){
   const {data, error} = await sb.from(table).update(patch).eq('id', id).select().single();
@@ -1469,12 +1473,12 @@ async function submitRegistration(sportId){
     status: isFree ? 'approved' : 'pending',
     player_id: isFree ? genPlayerId(s) : null,
   };
-  const {ok, data} = await tInsert('registrations', row);
+  const {ok} = await tInsert('registrations', row);
   btn.disabled = false; btn.textContent = 'Submit Registration';
   if(!ok){ msgArea.innerHTML = `<div class="msg-banner err">Something went wrong saving your registration. Please try again.</div>`; return; }
 
   if(isFree){
-    msgArea.innerHTML = `<div class="msg-banner ok">You're in! Your Player ID is <strong>${data.player_id}</strong>. Save this for reporting on event day.</div>`;
+    msgArea.innerHTML = `<div class="msg-banner ok">You're in! Your Player ID is <strong>${row.player_id}</strong>. Save this for reporting on event day.</div>`;
   }else{
     msgArea.innerHTML = `<div class="msg-banner ok">Registration submitted — thank you! Organisers will verify your payment shortly and issue your Player ID. Check status anytime using your phone number.</div>`;
   }
@@ -1881,7 +1885,7 @@ async function adminPhotos(){
     if(!path){ toast('Upload failed — try again', 'err'); return; }
     const url = publicUrl('event-photos', path);
     const date = new Date().toISOString();
-    const {ok, data} = await tInsert('photos', {url, caption, date});
+    const {ok} = await tInsert('photos', {url, caption, date});
     if(ok){
       await tInsert('updates', {title:caption||'New photo posted', body:'A new photo/highlight has been added to the gallery.', category:'photo-highlight', pinned:false, date});
       toast('Photo posted', 'ok');
