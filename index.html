@@ -84,6 +84,9 @@ nav.mainnav a{
 }
 nav.mainnav a:hover{color:var(--bright);background:var(--cream-dim);}
 nav.mainnav a.active{color:var(--ink);background:var(--gold);font-weight:600;}
+nav.mainnav a.nav-cta{color:var(--clay);font-weight:600;}
+nav.mainnav a.nav-cta:hover{color:var(--maroon-dark);background:var(--cream-dim);}
+nav.mainnav a.nav-cta.active{color:var(--ink);background:var(--gold);}
 .nav-toggle{display:none;background:none;border:1px solid var(--line);color:var(--bright);padding:8px 10px;border-radius:var(--radius);}
 @media(max-width:940px){
   nav.mainnav{display:none;position:absolute;top:100%;left:0;right:0;background:var(--ink);flex-direction:column;padding:6px 12px 14px;border-top:1px solid var(--line);}
@@ -856,7 +859,7 @@ function renderShell(bodyHtml){
         <button class="nav-toggle" id="navToggle">☰ Menu</button>
         <nav class="mainnav" id="mainNav">
           ${NAV_ITEMS.map(n=>`<a href="#${n.route}" data-route="${n.route}">${n.label}</a>`).join('')}
-          <a href="#register" style="color:var(--clay);font-weight:600;">Register →</a>
+          <a href="#register" data-route="register" class="nav-cta">Register →</a>
         </nav>
       </div>
     </div>
