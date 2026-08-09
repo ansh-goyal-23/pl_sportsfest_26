@@ -1054,6 +1054,7 @@ async function renderHome(){
         <div class="hero-ctas">
           <a href="#register" class="btn btn-primary">Register Now</a>
           <a href="#schedule" class="btn btn-outline">View Schedule</a>
+          <button class="btn btn-outline" id="heroStatusBtn" type="button">Check Registration Status</button>
         </div>
       </div>
       <span class="wreath-decor" style="color:var(--gold)">${laurelSVG('')}</span>
@@ -1101,6 +1102,7 @@ async function renderHome(){
   const grid = document.getElementById('homeSportsGrid');
   grid.innerHTML = SPORTS.map(sportCardHtml).join('');
   wireSportCards(grid);
+  document.getElementById('heroStatusBtn').addEventListener('click', openStatusModal);
 }
 
 function sportCardHtml(s){
@@ -1464,7 +1466,7 @@ async function renderRegister(preSportId){
   `);
   const sel = document.getElementById('regSportSelect');
   sel.addEventListener('change', ()=> renderRegDynamic(sel.value));
-  document.getElementById('statusCheckBtn').addEventListener('click', checkRegStatus);
+  document.getElementById('statusCheckBtn').addEventListener('click', ()=>checkRegStatus());
   if(preSportId){ sel.value = preSportId; renderRegDynamic(preSportId); }
 }
 
@@ -1815,22 +1817,50 @@ function genPlayerId(sport){
   return 'PL26-' + code + '-' + Math.floor(1000+Math.random()*9000);
 }
 
-async function checkRegStatus(){
-  const phone = document.getElementById('statusPhoneInput').value.trim();
-  const host = document.getElementById('statusResult');
+async function checkRegStatus(inputId, resultId){
+  inputId = inputId || 'statusPhoneInput';
+  resultId = resultId || 'statusResult';
+  const phone = document.getElementById(inputId).value.trim();
+  const host = document.getElementById(resultId);
   if(!phone){ host.innerHTML = `<div class="msg-banner err">Enter a phone number.</div>`; return; }
   host.innerHTML = `<div class="loading-dots">Checking…</div>`;
   const {data, error} = await sb.rpc('check_registration_status', {p_phone: phone});
   if(error){ host.innerHTML = `<div class="msg-banner err">Couldn't check status right now — please try again.</div>`; return; }
   if(!data || !data.length){ host.innerHTML = `<div class="msg-banner info">No registrations found for that number.</div>`; return; }
-  host.innerHTML = data.map(r=>`
-    <div style="border:1px solid var(--line);padding:12px;margin-top:10px;background:var(--white);">
+  host.innerHTML = data.map(r=>{
+    let statusBlock;
+    if(r.status==='approved'){
+      statusBlock = `<div class="mono" style="font-size:11.5px;margin-top:6px;">Status: <span class="badge green">approved</span></div>
+        <div style="margin-top:8px;"><span class="player-id-tag">${r.player_id}</span></div>`;
+    }else if(r.status==='rejected'){
+      statusBlock = `<div style="margin-top:8px;font-size:13.5px;line-height:1.75;">
+        <div>❌ <strong>Could Not Be Verified</strong></div>
+        <div>📞 Please Contact the Organisers</div>
+      </div>`;
+    }else{
+      statusBlock = `<div style="margin-top:8px;font-size:13.5px;line-height:1.75;">
+        <div>✅ <strong>Registration Complete</strong></div>
+        <div>⏳ <strong>Verification Pending</strong></div>
+        <div>📌 <strong>Check Back Later</strong> for your Player ID</div>
+      </div>`;
+    }
+    return `<div style="border:1px solid var(--line);padding:12px;margin-top:10px;background:var(--white);">
       <strong style="font-family:'Anton';text-transform:uppercase;">${esc(r.sport_name)} — ${esc(r.event_label)}</strong>
-      <div class="mono" style="font-size:11.5px;margin-top:6px;">
-        Status: <span class="badge ${r.status==='approved'?'green':(r.status==='rejected'?'maroon':'gold')}">${r.status}</span>
-      </div>
-      ${r.player_id ? `<div style="margin-top:8px;"><span class="player-id-tag">${r.player_id}</span></div>` : ''}
-    </div>`).join('');
+      ${statusBlock}
+    </div>`;
+  }).join('');
+}
+
+function openStatusModal(){
+  openModal(`
+    <button class="close-x" id="modalClose">✕</button>
+    <h3 style="font-size:19px;">Check Registration Status</h3>
+    <p class="hint" style="margin-top:6px;margin-bottom:14px;">Look up your registration using the phone number you registered with.</p>
+    <div class="field" style="margin-bottom:10px;"><input type="tel" id="statusPhoneInputModal" placeholder="10-digit phone number"></div>
+    <button class="btn btn-primary" id="statusCheckBtnModal" style="width:100%;justify-content:center;">Check Status</button>
+    <div id="statusResultModal" style="margin-top:16px;"></div>
+  `);
+  document.getElementById('statusCheckBtnModal').addEventListener('click', ()=>checkRegStatus('statusPhoneInputModal','statusResultModal'));
 }
 </script>
 <script>
