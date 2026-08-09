@@ -1689,6 +1689,21 @@ async function submitRegistration(sportId){
     }
   }
 
+  // Duplicate check — same phone, same sport/category/event, still pending
+  // or already approved. A prior rejection doesn't block a fresh attempt.
+  const submitBtnForDupCheck = document.getElementById('regSubmitBtn');
+  if(submitBtnForDupCheck){ submitBtnForDupCheck.disabled = true; submitBtnForDupCheck.textContent = 'Checking…'; }
+  const {data: isDuplicate, error: dupError} = await sb.rpc('check_duplicate_registration', {
+    p_phone: phone, p_sport_id: sportId, p_category_id: catSel.value, p_event_id: ev.id
+  });
+  if(submitBtnForDupCheck){ submitBtnForDupCheck.disabled = false; submitBtnForDupCheck.textContent = 'Submit Registration'; }
+  if(dupError) console.error(dupError); // fail open — don't block submission on an infra hiccup
+  if(isDuplicate){
+    msgArea.innerHTML = `<div class="msg-banner err">Already Registered — <a href="#" id="dupStatusLink" style="text-decoration:underline;color:inherit;">Please Check Registration Status</a></div>`;
+    document.getElementById('dupStatusLink')?.addEventListener('click', e=>{ e.preventDefault(); openStatusModal(phone); });
+    return;
+  }
+
   // All checks passed — build the registration row (payment fields added next)
   const baseRow = {
     sport_id: sportId, sport_name: s.name,
@@ -1851,16 +1866,17 @@ async function checkRegStatus(inputId, resultId){
   }).join('');
 }
 
-function openStatusModal(){
+function openStatusModal(prefillPhone){
   openModal(`
     <button class="close-x" id="modalClose">✕</button>
     <h3 style="font-size:19px;">Check Registration Status</h3>
     <p class="hint" style="margin-top:6px;margin-bottom:14px;">Look up your registration using the phone number you registered with.</p>
-    <div class="field" style="margin-bottom:10px;"><input type="tel" id="statusPhoneInputModal" placeholder="10-digit phone number"></div>
+    <div class="field" style="margin-bottom:10px;"><input type="tel" id="statusPhoneInputModal" placeholder="10-digit phone number" value="${prefillPhone?esc(prefillPhone):''}"></div>
     <button class="btn btn-primary" id="statusCheckBtnModal" style="width:100%;justify-content:center;">Check Status</button>
     <div id="statusResultModal" style="margin-top:16px;"></div>
   `);
   document.getElementById('statusCheckBtnModal').addEventListener('click', ()=>checkRegStatus('statusPhoneInputModal','statusResultModal'));
+  if(prefillPhone) checkRegStatus('statusPhoneInputModal','statusResultModal');
 }
 </script>
 <script>
@@ -2136,7 +2152,6 @@ async function adminRegistrations(){
       <div class="ractions">
         ${r.status==='pending' ? `<button class="btn-approve" data-approve="${r.id}">Approve & Issue Player ID</button><button class="btn-reject" data-reject="${r.id}">Reject</button>` : ''}
         ${r.status==='approved' || r.status==='rejected' ? `<button class="btn-ghost" data-undo="${r.id}">↺ Undo — back to Pending</button>` : ''}
-        <button class="btn-del" data-del-reg="${r.id}">Delete</button>
       </div>
     </div>`).join('');
   refreshBulkBar();
@@ -2177,16 +2192,6 @@ async function adminRegistrations(){
       if(!confirm(`Undo this ${r.status}? It will go back to Pending${wasApproved?' and its Player ID will be cleared':''}.`)) return;
       const {ok} = await tUpdate('registrations', r.id, {status:'pending', player_id: null});
       if(ok) toast('Reverted to Pending', 'info'); else toast('Could not undo — try again', 'err');
-      adminRegistrations();
-    });
-  });
-  host.querySelectorAll('[data-del-reg]').forEach(el=>{
-    el.addEventListener('click', async ()=>{
-      if(!confirm('Delete this registration permanently?')) return;
-      const r = all.find(x=>x.id===el.dataset.delReg);
-      if(r.screenshot_path) await sb.storage.from('payment-screenshots').remove([r.screenshot_path]);
-      await tDelete('registrations', el.dataset.delReg);
-      toast('Registration deleted', 'info');
       adminRegistrations();
     });
   });
