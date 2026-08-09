@@ -485,6 +485,7 @@ const CONTACTS = [
   {name:'Tarun', phone:'9910399636'},
   {name:'Kapil', phone:'9910763366'}
 ];
+const TECH_CONTACT = {name:'Ansh', phone:'9667184789'};
 
 const SPORTS = [
 
@@ -978,6 +979,7 @@ function renderShell(bodyHtml){
           <div>
             <h4>Organisers</h4>
             ${CONTACTS.map(c=>`<a class="flink" href="tel:${c.phone}">${c.name} — ${c.phone}</a>`).join('')}
+            <a class="flink" href="tel:${TECH_CONTACT.phone}" style="margin-top:8px;">Tech Support: ${TECH_CONTACT.name} — ${TECH_CONTACT.phone}</a>
           </div>
         </div>
         <div class="footer-bottom">
@@ -1381,6 +1383,15 @@ async function renderContact(){
         <h3 style="font-size:20px;">Prateek Laurel Apartments</h3>
         <p>All events are held within the society premises — courts, the Clubhouse, Central Park, and the Back Gate route. Exact venues are listed on each sport's page.</p>
       </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="tag">Technical Support</div>
+        <h3 style="font-size:20px;">Trouble with the website or registration?</h3>
+        <p style="margin-top:10px;">For site glitches, payment/upload issues, or anything not working as expected, contact:</p>
+        <p style="margin-top:12px;">
+          <a href="tel:${TECH_CONTACT.phone}" class="mono" style="color:var(--maroon);font-size:16px;display:block;">${TECH_CONTACT.name} — 📞 ${TECH_CONTACT.phone}</a>
+          <a href="https://wa.me/91${TECH_CONTACT.phone}" target="_blank" class="mono" style="color:var(--green);font-size:13px;display:block;margin-top:8px;">💬 WhatsApp</a>
+        </p>
+      </div>
     </section>
   `);
 }
@@ -1693,12 +1704,19 @@ async function finalizeRegistration(row, msgArea, isFree){
 // Shown after the form passes every check, for events with a fee: the QR
 // code and screenshot upload live here instead of inline in the form, so
 // the person only sees payment details once everything else is confirmed.
+// Builds its own modal (rather than using the shared openModal helper) so
+// closing it can be guarded — nothing is saved to the database until the
+// Confirm button succeeds, so an accidental close must not happen silently.
 function openPaymentModal(s, feeAmount, baseRow, msgArea){
   let modalFile = null;
-  openModal(`
-    <button class="close-x" id="modalClose">✕</button>
+  let saved = false;
+  const host = document.getElementById('toast-host');
+  const bd = document.createElement('div');
+  bd.className = 'modal-backdrop';
+  bd.innerHTML = `<div class="modal-box">
+    <button class="close-x" id="modalCloseBtn">✕</button>
     <h3 style="font-size:19px;">Complete Your Payment</h3>
-    <p class="hint" style="margin-top:6px;">Scan and pay ₹${feeAmount} via UPI, then upload your payment screenshot to finish registering for ${esc(s.name)}.</p>
+    <p class="hint" style="margin-top:6px;">Scan and pay ₹${feeAmount} via UPI, then upload your payment screenshot to finish registering for ${esc(s.name)}. You can take a screenshot and pay, or scan the QR from another phone.</p>
     <div class="qr-box" id="qrHostModal" style="margin-top:14px;"><p class="mono" style="font-size:12px;color:var(--slate);">Loading payment QR…</p></div>
     <div class="field" style="margin-top:16px;">
       <label>Upload Payment Screenshot</label>
@@ -1707,9 +1725,21 @@ function openPaymentModal(s, feeAmount, baseRow, msgArea){
         <input type="file" id="uploadInputModal" accept="image/*" style="display:none;">
       </div>
     </div>
+    <div class="msg-banner info" style="margin-top:14px;margin-bottom:0;">⚠️ Your registration is <strong>not saved yet</strong> — it only saves once you upload your screenshot and press Confirm below.</div>
     <div id="modalPayMsg"></div>
     <button class="btn btn-primary" id="modalConfirmBtn" style="width:100%;justify-content:center;margin-top:16px;">Confirm &amp; Submit Registration</button>
-  `);
+  </div>`;
+  host.appendChild(bd);
+
+  function tryClose(){
+    if(saved){ bd.remove(); return; }
+    if(confirm("Close without finishing? Your registration has NOT been saved — you'll need to fill the form again from scratch if you close now.")){
+      bd.remove();
+    }
+  }
+  bd.addEventListener('click', e=>{ if(e.target===bd) tryClose(); });
+  bd.querySelector('#modalCloseBtn').addEventListener('click', tryClose);
+
   renderPaymentQR(feeAmount, s.name, 'qrHostModal');
 
   const box = document.getElementById('uploadBoxModal');
@@ -1743,7 +1773,8 @@ function openPaymentModal(s, feeAmount, baseRow, msgArea){
     const row = {...baseRow, screenshot_path: screenshotPath, status:'pending', player_id: null};
     const ok = await finalizeRegistration(row, msgArea, false);
     if(ok){
-      document.querySelector('.modal-backdrop')?.remove();
+      saved = true;
+      bd.remove();
     }else{
       confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Submit Registration';
       modalMsg.innerHTML = `<div class="msg-banner err">Something went wrong saving your registration. Please try again.</div>`;
