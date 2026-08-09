@@ -550,12 +550,12 @@ const SPORTS = [
 
 {
   id:'basketball', name:'3+1 Basketball', short:'Half-court · 3v3', icon:'🏀',
-  dateLabel:'16 Aug', venue:"Society's Basketball Court", feeLabel:'₹600 per team',
+  dateLabel:'16 Aug', venue:"Society's Basketball Court", feeLabel:'₹300 U10/U14 · ₹600 Open',
   tagline:'Half-court 3-vs-3 basketball with one substitute, across U10, U14 and Open categories.',
   registration:{
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
-    events:[{id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, fee:600, genderRule:'choose'}]
+    events:[{id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, feeType:'flatByCategory', feeByCategory:{u10:300,u14:300,open:600}, genderRule:'choose'}]
   },
   rulesHtml:`
     <h4>Categories</h4>
@@ -606,14 +606,14 @@ const SPORTS = [
 
 {
   id:'lawn-tennis', name:'Lawn Tennis', short:'Singles & Doubles', icon:'🎾',
-  dateLabel:'16 Aug', venue:"Society's Lawn Tennis Court", feeLabel:'₹300 singles · ₹600 doubles',
+  dateLabel:'16 Aug', venue:"Society's Lawn Tennis Court", feeLabel:'U14 ₹200/team · Open ₹200 singles, ₹400 doubles',
   tagline:"Under-14 doubles plus Open Men's, Women's and Mixed Doubles.",
   registration:{
     mode:'form',
     categories:[{id:'u14',label:'Under 14 (doubles only)'},{id:'open',label:'Open'}],
     events:[
-      {id:'singles', label:"Singles — Men's / Women's (Open only)", teamSize:1, fee:300, genderRule:'choose'},
-      {id:'doubles', label:'Doubles', teamSize:2, fee:600, genderRule:'chooseOrMixed', mixedCategories:['open']}
+      {id:'singles', label:"Singles — Men's / Women's (Open only)", teamSize:1, genderRule:'choose'},
+      {id:'doubles', label:'Doubles', teamSize:2, genderRule:'chooseOrMixed', mixedCategories:['open']}
     ],
     eventsByCategory: { 'u14': ['doubles'], 'open': ['singles','doubles'] }
   },
@@ -625,7 +625,7 @@ const SPORTS = [
     <tr><td>Open</td><td>Women's Singles</td></tr>
     <tr><td>Open</td><td>Doubles — Mixed Doubles allowed</td></tr></table>
     <h4>Registration fees</h4>
-    <ul><li>Singles: ₹300 per person</li><li>Doubles: ₹600 per team</li><li>60+ participants: Free</li></ul>
+    <ul><li>Under 14 Doubles: ₹200 per team</li><li>Open Singles: ₹200 per person</li><li>Open Doubles: ₹400 per team</li></ul>
     <h4>Registration</h4>
     <ul>
       <li>Under 14 Doubles: 2 players per team, both eligible for Under 14</li>
@@ -645,23 +645,23 @@ const SPORTS = [
 
 {
   id:'badminton', name:'Badminton', short:'Singles & Doubles', icon:'🏸',
-  dateLabel:'22–24 Aug', venue:"Society's Badminton Court", feeLabel:'₹300 singles · ₹600 doubles · Free for 60+',
+  dateLabel:'22–24 Aug', venue:"Society's Badminton Court", feeLabel:'7–10/U14 ₹100 singles, ₹200 doubles · Open ₹200 singles, ₹400 doubles · Free for 60+',
   tagline:"Men's & Women's Singles, Men's, Women's & Mixed Doubles across four age categories.",
   registration:{
     mode:'form',
     categories:[{id:'7-10',label:'Age 7–10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
     events:[
-      {id:'ms', label:"Men's Singles", teamSize:1, fee:300, genderRule:'male'},
-      {id:'ws', label:"Women's Singles", teamSize:1, fee:300, genderRule:'female'},
-      {id:'md', label:"Men's Doubles", teamSize:2, fee:600, genderRule:'male'},
-      {id:'wd', label:"Women's Doubles", teamSize:2, fee:600, genderRule:'female'},
-      {id:'xd', label:'Mixed Doubles', teamSize:2, fee:600, genderRule:'mixed'}
+      {id:'ms', label:"Men's Singles", teamSize:1, genderRule:'male'},
+      {id:'ws', label:"Women's Singles", teamSize:1, genderRule:'female'},
+      {id:'md', label:"Men's Doubles", teamSize:2, genderRule:'male'},
+      {id:'wd', label:"Women's Doubles", teamSize:2, genderRule:'female'},
+      {id:'xd', label:'Mixed Doubles', teamSize:2, genderRule:'mixed'}
     ]
   },
   rulesHtml:`
     <h4>Categories</h4><p>Age 7–10, Under 14, Open, 60+ — each with Men's Singles, Women's Singles, Men's Doubles, Women's Doubles and Mixed Doubles.</p>
     <h4>Registration fees</h4>
-    <ul><li>Singles: ₹300 per person</li><li>Doubles: ₹600 per team</li><li>60+ category: Free</li></ul>
+    <ul><li>Age 7–10 / Under 14: ₹100 per person singles, ₹200 per team doubles</li><li>Open: ₹200 per person singles, ₹400 per team doubles</li><li>60+ category: Free</li></ul>
     <h4>Match rules &amp; format</h4>
     <p>Standard Badminton rules apply, subject to tournament-specific rules. Format, scoring, games and match duration will be finalised by the Sports Committee based on registrations and announced before the competition.</p>
     <h4>Reporting</h4>
@@ -675,22 +675,22 @@ const SPORTS = [
 
 {
   id:'table-tennis', name:'Table Tennis', short:'Singles & Doubles', icon:'🏓',
-  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'₹300 singles · ₹600 doubles · Free for 60+',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'U10/U14 ₹100 singles, ₹200 doubles · Open ₹200 singles, ₹400 doubles · Free for 60+',
   tagline:"Men's & Women's Singles and Doubles across Under 10, Under 14, Open and 60+.",
   registration:{
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
     events:[
-      {id:'ms', label:"Men's Singles", teamSize:1, fee:300, genderRule:'male'},
-      {id:'ws', label:"Women's Singles", teamSize:1, fee:300, genderRule:'female'},
-      {id:'md', label:"Men's Doubles", teamSize:2, fee:600, genderRule:'male'},
-      {id:'wd', label:"Women's Doubles", teamSize:2, fee:600, genderRule:'female'}
+      {id:'ms', label:"Men's Singles", teamSize:1, genderRule:'male'},
+      {id:'ws', label:"Women's Singles", teamSize:1, genderRule:'female'},
+      {id:'md', label:"Men's Doubles", teamSize:2, genderRule:'male'},
+      {id:'wd', label:"Women's Doubles", teamSize:2, genderRule:'female'}
     ]
   },
   rulesHtml:`
     <h4>Categories</h4><p>Under 10, Under 14, Open, 60+ — each with Men's Singles, Women's Singles, Men's Doubles and Women's Doubles.</p>
     <h4>Registration fees</h4>
-    <ul><li>Singles: ₹300 per person</li><li>Doubles: ₹600 per team</li><li>60+ category: Free</li></ul>
+    <ul><li>Under 10 / Under 14: ₹100 per person singles, ₹200 per team doubles</li><li>Open: ₹200 per person singles, ₹400 per team doubles</li><li>60+ category: Free</li></ul>
     <h4>Match rules &amp; format</h4>
     <p>Standard Table Tennis rules apply, subject to tournament-specific rules. Format, scoring and match duration finalised by the Sports Committee and announced before the competition.</p>
     <h4>Reporting</h4><p>Players/teams report before their scheduled match; late arrival may mean a walkover.</p>
@@ -701,16 +701,16 @@ const SPORTS = [
 
 {
   id:'chess', name:'Chess', short:'Individual', icon:'♟️',
-  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'₹300 per person',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'U10 ₹100 · Open ₹200',
   tagline:'Individual chess competition in Under 10 and Open categories.',
   registration:{
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'}],
-    events:[{id:'chess', label:'Chess', teamSize:1, fee:300, genderRule:'any'}]
+    events:[{id:'chess', label:'Chess', teamSize:1, genderRule:'any'}]
   },
   rulesHtml:`
     <h4>Categories</h4><p>Under 10 and Open.</p>
-    <h4>Registration fee</h4><p>₹300 per person, individual registration.</p>
+    <h4>Registration fee</h4><p>Under 10: ₹100 per person. Open: ₹200 per person. Individual registration.</p>
     <h4>Format &amp; duration</h4><p>Standard Chess rules apply. Tournament format and time control will be decided by the Sports Committee based on registrations and announced before the competition.</p>
     <h4>Reporting</h4><p>Participants report before their scheduled match; late arrival may mean a walkover.</p>
     <h4>Awards</h4><p>🥇 Winner, 🥈 Runner-up per category, plus participation certificates for all.</p>
@@ -720,19 +720,19 @@ const SPORTS = [
 
 {
   id:'carrom', name:'Carrom', short:'Singles & Doubles', icon:'⚪',
-  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'₹300 singles · ₹600 doubles',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'U10 ₹100 singles, ₹200 doubles · Open ₹200 singles, ₹400 doubles',
   tagline:'Singles and doubles carrom in Under 10 and Open categories.',
   registration:{
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'}],
     events:[
-      {id:'singles', label:'Singles', teamSize:1, fee:300, genderRule:'any'},
-      {id:'doubles', label:'Doubles', teamSize:2, fee:600, genderRule:'any'}
+      {id:'singles', label:'Singles', teamSize:1, genderRule:'any'},
+      {id:'doubles', label:'Doubles', teamSize:2, genderRule:'any'}
     ]
   },
   rulesHtml:`
     <h4>Categories &amp; events</h4><p>Under 10 and Open — Singles (individual) and Doubles (2 players per team).</p>
-    <h4>Registration fees</h4><ul><li>Singles: ₹300 per person</li><li>Doubles: ₹600 per team</li></ul>
+    <h4>Registration fees</h4><ul><li>Under 10: ₹100 per person singles, ₹200 per team doubles</li><li>Open: ₹200 per person singles, ₹400 per team doubles</li></ul>
     <h4>Format &amp; duration</h4><p>Standard Carrom rules apply. Format, scoring, boards/rounds and duration finalised by the Sports Committee and announced before the competition.</p>
     <h4>Reporting</h4><p>Players/teams report before their scheduled match; late arrival may mean a walkover.</p>
     <h4>Awards</h4><p>🥇 Winner, 🥈 Runner-up per event/category, plus participation certificates for all.</p>
@@ -742,16 +742,16 @@ const SPORTS = [
 
 {
   id:'pool', name:'Pool', short:'8-Ball · Singles', icon:'🎱',
-  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'₹300 per person',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'₹200 per person',
   tagline:'Open category 8-Ball Pool, individual competition.',
   registration:{
     mode:'form',
     categories:[{id:'open',label:'Open'}],
-    events:[{id:'singles', label:'Singles', teamSize:1, fee:300, genderRule:'any'}]
+    events:[{id:'singles', label:'Singles', teamSize:1, genderRule:'any'}]
   },
   rulesHtml:`
     <h4>Category</h4><p>Open, Singles — individual registration.</p>
-    <h4>Registration fee</h4><p>₹300 per person.</p>
+    <h4>Registration fee</h4><p>₹200 per person.</p>
     <h4>Match rules</h4><p>Standard rules of 8-Ball Pool apply, subject to tournament-specific rules. The match official's decision on match administration is final.</p>
     <h4>Format &amp; duration</h4><p>Format, number of frames and time restrictions decided by the Sports Committee based on registrations and announced before the competition.</p>
     <h4>Reporting</h4><p>Participants report before their scheduled match; late arrival may mean a walkover.</p>
@@ -762,15 +762,19 @@ const SPORTS = [
 
 {
   id:'football', name:'Football', short:'Auction format', icon:'⚽',
-  dateLabel:'22–23 Aug · Evening', venue:'Ground Nearby', feeLabel:'Paid — amount TBA',
-  tagline:'Individual paid registration followed by a player auction to form teams. Full details coming soon.',
-  registration:{ mode:'contact' },
+  dateLabel:'22–23 Aug · Evening', venue:'Ground Nearby', feeLabel:'₹300 per person',
+  tagline:'Individual paid registration followed by a player auction to form teams.',
+  registration:{
+    mode:'form',
+    categories:[{id:'open',label:'Open'}],
+    events:[{id:'individual', label:'Individual Registration', teamSize:1, feeType:'flat', fee:300, genderRule:'any'}]
+  },
   rulesHtml:`
     <h4>Format</h4>
     <p>Football will run as individual paid registrations, followed by a player auction to draft teams — rather than players registering as pre-formed teams.</p>
-    <h4>What's confirmed so far</h4>
-    <ul><li>Registration is individual and paid (fee amount to be announced)</li><li>Teams will be formed via an auction after registrations close</li></ul>
-    <p>Full rules, fee, dates and auction process will be posted on the Updates page. For now, reach out to the organisers below if you want to be notified as soon as registration opens.</p>
+    <h4>Registration fee</h4>
+    <ul><li>₹300 per person, individual registration</li><li>Teams will be formed via an auction after registrations close</li></ul>
+    <p>Full auction process and match schedule will be posted on the Updates page.</p>
   `
 }
 ];
@@ -853,6 +857,24 @@ function ageRuleMessage(catLabel, rule){
   if(rule.max!=null) return `${catLabel} needs an age of ${rule.max} or under`;
   if(rule.min!=null) return `${catLabel} needs an age of ${rule.min} or above`;
   return '';
+}
+
+/* Per-person registration fee by age category, shared across every sport
+   except Basketball (which is a flat fee per team regardless of category —
+   see the event's own feeType:'flat'). A doubles/team entry is this rate
+   × the number of participants. */
+const CATEGORY_FEE_RATE = {
+  'u10':  100,
+  'u14':  100,
+  '7-10': 100,
+  'open': 200,
+  '60+':  0,
+};
+function computeFee(ev, catId){
+  if(ev.feeType === 'flat') return ev.fee;
+  if(ev.feeType === 'flatByCategory') return (ev.feeByCategory && ev.feeByCategory[catId]!=null) ? ev.feeByCategory[catId] : (ev.fee||0);
+  const rate = CATEGORY_FEE_RATE[catId];
+  return (rate!=null ? rate : (ev.fee||0)) * ev.teamSize;
 }
 </script>
 <script>
@@ -1497,7 +1519,7 @@ async function updateRegForm(sportId){
   const cfg = s.registration;
   const ev = currentEventConfig(sportId);
   const catSel = document.getElementById('regCategory');
-  const isFree = ev.fee===0 || catSel.value==='60+';
+  const isFree = computeFee(ev, catSel.value)===0;
   const teamSize = ev.teamSize;
 
   const catObj = cfg.categories.find(c=>c.id===catSel.value);
@@ -1542,12 +1564,13 @@ async function updateRegForm(sportId){
   if(isFree){
     payArea.innerHTML = `<div class="msg-banner ok">This event is free to enter — no payment needed. Just submit the form below.</div>`;
   }else{
+    const feeAmount = computeFee(ev, catSel.value);
     const settings = await getSettings();
     payArea.innerHTML = `
       <div class="field">
-        <label>4. Payment — ₹${ev.fee}</label>
+        <label>4. Payment — ₹${feeAmount}</label>
         <div class="qr-box" id="qrHost"><p class="mono" style="font-size:12px;color:var(--slate);">Loading payment QR…</p></div>
-        <p class="hint">Scan and pay ₹${ev.fee} via UPI, then upload a screenshot of the successful payment below.</p>
+        <p class="hint">Scan and pay ₹${feeAmount} via UPI, then upload a screenshot of the successful payment below.</p>
       </div>
       <div class="field">
         <label>Upload Payment Screenshot</label>
@@ -1556,7 +1579,7 @@ async function updateRegForm(sportId){
           <input type="file" id="uploadInput" accept="image/*" style="display:none;">
         </div>
       </div>`;
-    renderPaymentQR(ev.fee, s.name);
+    renderPaymentQR(feeAmount, s.name);
     const box = document.getElementById('uploadBox');
     const input = document.getElementById('uploadInput');
     box.addEventListener('click', ()=>input.click());
@@ -1598,7 +1621,7 @@ async function submitRegistration(sportId){
   const ev = currentEventConfig(sportId);
   const catSel = document.getElementById('regCategory');
   const catObj = cfg.categories.find(c=>c.id===catSel.value);
-  const isFree = ev.fee===0 || catSel.value==='60+';
+  const isFree = computeFee(ev, catSel.value)===0;
   const msgArea = document.getElementById('regMsgArea');
   const phone = document.getElementById('regPhone').value.trim();
   const flat = document.getElementById('regFlat').value.trim();
@@ -1669,7 +1692,7 @@ async function submitRegistration(sportId){
     gender_cat: document.getElementById('regGenderCat')?.value || null,
     team_name: teamNameEl ? teamNameEl.value.trim() : null,
     participants, phone, flat,
-    fee: isFree?0:ev.fee,
+    fee: isFree?0:computeFee(ev, catSel.value),
     screenshot_path: screenshotPath,
     status: isFree ? 'approved' : 'pending',
     player_id: isFree ? genPlayerId(s) : null,
