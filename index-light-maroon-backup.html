@@ -450,6 +450,38 @@ function toast(msg, type){
   el.appendChild(t);
   setTimeout(()=>t.remove(), 3800);
 }
+
+/* =========================================================
+   ANONYMOUS ANALYTICS (visitor-ID based)
+   ========================================================= */
+// Wrapped so a storage failure (private browsing, blocked storage, etc.)
+// or a network failure can NEVER throw, block, or delay anything else on
+// the site — including registration submission, which also tags itself
+// with this ID for the admin funnel view. Analytics is best-effort only.
+function getVisitorId(){
+  try{
+    let id = localStorage.getItem('plsf_visitor_id');
+    if(!id){
+      id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('v_'+Date.now()+'_'+Math.random().toString(36).slice(2,10));
+      localStorage.setItem('plsf_visitor_id', id);
+    }
+    return id;
+  }catch(e){ return null; }
+}
+function logPageView(page){
+  try{
+    const visitorId = getVisitorId();
+    if(!visitorId || !CONFIG_READY) return;
+    sb.from('analytics_events').insert({visitor_id: visitorId, event_type:'pageview', page}).then(()=>{}, ()=>{});
+    let today, lastHit;
+    try{ today = new Date().toISOString().slice(0,10); lastHit = localStorage.getItem('plsf_last_hit_date'); }
+    catch(e){ today = null; lastHit = null; }
+    if(today && lastHit !== today){
+      try{ localStorage.setItem('plsf_last_hit_date', today); }catch(e){}
+      sb.from('analytics_events').insert({visitor_id: visitorId, event_type:'hit', page}).then(()=>{}, ()=>{});
+    }
+  }catch(e){ /* never let analytics break the site */ }
+}
 </script>
 <script>
 /* =========================================================
@@ -1713,6 +1745,7 @@ async function submitRegistration(sportId){
     team_name: teamNameEl ? teamNameEl.value.trim() : null,
     participants, phone, flat,
     fee: feeAmount,
+    visitor_id: getVisitorId(), // analytics only — never read or checked by any validation
   };
 
   if(isFree){
@@ -1917,6 +1950,7 @@ async function renderAdmin(){
 
 const ADMIN_SECTIONS = [
   {id:'registrations', label:'Registrations'},
+  {id:'analytics', label:'Site Analytics'},
   {id:'updates', label:'Updates & Announcements'},
   {id:'fixtures', label:'Fixtures & Results'},
   {id:'sponsors', label:'Sponsorships'},
@@ -1956,6 +1990,7 @@ async function renderAdminPanel(){
 async function loadAdminSection(){
   const map = {
     registrations: adminRegistrations,
+    analytics: adminAnalytics,
     updates: adminUpdates,
     fixtures: adminFixtures,
     sponsors: adminSponsors,
@@ -2195,6 +2230,80 @@ async function adminRegistrations(){
       adminRegistrations();
     });
   });
+}
+
+/* ---------- Admin: Site Analytics ---------- */
+async function adminAnalytics(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `<div class="loading-dots">Loading analytics…</div>`;
+  const events = await tFetchAll('analytics_events', 'created_at', false);
+  const regs = await tFetchAll('registrations', 'submitted_at', false);
+
+  if(!events.length){
+    main.innerHTML = `<div class="empty-state"><div class="em-icon">📊</div><p>No visits recorded yet — data will start showing up once people visit the live site.</p></div>`;
+    return;
+  }
+
+  const hits = events.filter(e=>e.event_type==='hit');
+  const pageviews = events.filter(e=>e.event_type==='pageview');
+  const uniqueVisitors = new Set(events.map(e=>e.visitor_id));
+  const startedVisitors = new Set(pageviews.filter(e=>e.page==='register').map(e=>e.visitor_id));
+  const completedVisitors = new Set(regs.filter(r=>r.visitor_id).map(r=>r.visitor_id));
+  const startedButNotCompleted = [...startedVisitors].filter(id=>!completedVisitors.has(id)).length;
+  const conversionRate = startedVisitors.size ? Math.round(100 * [...startedVisitors].filter(id=>completedVisitors.has(id)).length / startedVisitors.size) : 0;
+
+  // Daily hits, last 14 days
+  const byDate = {};
+  hits.forEach(e=>{ const d = e.created_at.slice(0,10); byDate[d] = (byDate[d]||0)+1; });
+  const last14 = [];
+  for(let i=13;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    last14.push({date:key, count: byDate[key]||0});
+  }
+  const maxDay = Math.max(1, ...last14.map(d=>d.count));
+
+  // Page breakdown
+  const byPage = {};
+  pageviews.forEach(e=>{ const p = e.page||'(unknown)'; byPage[p] = (byPage[p]||0)+1; });
+  const pageRows = Object.entries(byPage).sort((a,b)=>b[1]-a[1]);
+  const maxPage = Math.max(1, ...pageRows.map(r=>r[1]));
+
+  main.innerHTML = `
+    <p class="hint" style="margin-bottom:20px;">Rough, anonymous estimates based on an ID stored in each visitor's browser — not exact unique-person counts, but close enough to spot trends. No names, phone numbers, or IP addresses are recorded.</p>
+    <div class="stat-row" style="margin-bottom:28px;">
+      <div class="stat-box"><div class="n">${hits.length}</div><div class="l">Total Hits</div></div>
+      <div class="stat-box"><div class="n">${uniqueVisitors.size}</div><div class="l">Est. Unique Visitors</div></div>
+      <div class="stat-box"><div class="n">${startedVisitors.size}</div><div class="l">Went to Register</div></div>
+      <div class="stat-box"><div class="n">${completedVisitors.size}</div><div class="l">Completed a Registration</div></div>
+      <div class="stat-box"><div class="n">${startedButNotCompleted}</div><div class="l">Started, Didn't Finish</div></div>
+      <div class="stat-box"><div class="n">${conversionRate}%</div><div class="l">Conversion Rate</div></div>
+    </div>
+
+    <h3 class="h-md" style="margin-bottom:14px;">Hits — Last 14 Days</h3>
+    <div style="margin-bottom:32px;">
+      ${last14.map(d=>`
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+          <div class="mono" style="width:78px;font-size:11px;color:#8a7f6e;flex:none;">${d.date.slice(5)}</div>
+          <div style="flex:1;background:var(--cream-dim);height:16px;position:relative;border-radius:2px;overflow:hidden;">
+            <div style="width:${Math.round(100*d.count/maxDay)}%;background:var(--gold);height:100%;"></div>
+          </div>
+          <div class="mono" style="width:30px;font-size:11px;color:#8a7f6e;text-align:right;flex:none;">${d.count}</div>
+        </div>`).join('')}
+    </div>
+
+    <h3 class="h-md" style="margin-bottom:14px;">Page Views by Page</h3>
+    <div>
+      ${pageRows.map(([page,count])=>`
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+          <div class="mono" style="width:110px;font-size:11px;color:#8a7f6e;flex:none;text-transform:capitalize;">${esc(page)}</div>
+          <div style="flex:1;background:var(--cream-dim);height:16px;position:relative;border-radius:2px;overflow:hidden;">
+            <div style="width:${Math.round(100*count/maxPage)}%;background:var(--green);height:100%;"></div>
+          </div>
+          <div class="mono" style="width:30px;font-size:11px;color:#8a7f6e;text-align:right;flex:none;">${count}</div>
+        </div>`).join('')}
+    </div>
+  `;
 }
 
 function openModal(inner){
@@ -2519,6 +2628,7 @@ async function render(){
   STATE.route = route;
   STATE.params = {param};
   window.scrollTo(0,0);
+  logPageView(route); // fire-and-forget, never awaited — cannot delay or break rendering
   try{
     switch(route){
       case 'home': await renderHome(); break;
