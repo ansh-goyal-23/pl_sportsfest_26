@@ -1961,6 +1961,15 @@ async function exportRegistrationsExcel(){
     const all = await tFetchAll('registrations', 'submitted_at', false);
     if(!all.length){ toast('No registrations to export yet', 'info'); return; }
 
+    // Signed URLs (7-day expiry) for every paid registration's screenshot —
+    // the bucket is private, so there's no permanent public link to use.
+    const withScreenshot = all.filter(r=>r.screenshot_path);
+    if(withScreenshot.length && btn) btn.textContent = `Preparing (${withScreenshot.length} screenshot links)…`;
+    const screenshotUrls = {};
+    await Promise.all(withScreenshot.map(async r=>{
+      screenshotUrls[r.id] = await signedUrl('payment-screenshots', r.screenshot_path, 604800); // 7 days
+    }));
+
     const regRows = all.map(r=>({
       'Submitted At': fmtDateTime(r.submitted_at),
       'Status': r.status,
@@ -1975,7 +1984,7 @@ async function exportRegistrationsExcel(){
       'Flat': r.flat,
       'Participant Count': (r.participants||[]).length,
       'Participants': (r.participants||[]).map(p=>`${p.name} (${p.age}, ${p.gender})`).join('; '),
-      'Payment Screenshot': r.screenshot_path ? 'Yes' : 'No (free entry)',
+      'Payment Screenshot Link': r.screenshot_path ? (screenshotUrls[r.id] || 'Link unavailable') : 'N/A (free entry)',
     }));
 
     const partRows = [];
@@ -2007,6 +2016,8 @@ async function exportRegistrationsExcel(){
       {'Metric':'Rejected', 'Value': all.filter(r=>r.status==='rejected').length},
       {'Metric':'Total Participants', 'Value': partRows.length},
       {'Metric':'—', 'Value':'—'},
+      {'Metric':'Note', 'Value':'Payment screenshot links expire 7 days after export — re-download for fresh links.'},
+      {'Metric':'—', 'Value':'—'},
       ...Object.entries(bySport).map(([sport,count])=>({'Metric':sport, 'Value':count})),
     ];
 
@@ -2027,6 +2038,7 @@ async function exportRegistrationsExcel(){
 
 async function adminRegistrations(){
   const main = document.getElementById('adminMain');
+  const selectedIds = new Set();
   main.innerHTML = `
     <div class="admin-toolbar" style="margin-bottom:0;">
       <div class="pill-tabs" id="regStatusPills" style="margin-bottom:0;">
@@ -2038,6 +2050,7 @@ async function adminRegistrations(){
       <button class="btn-dark btn-sm" id="exportExcelBtn">⬇ Download Excel Report</button>
     </div>
     <div id="regStatsRow"></div>
+    <div id="regBulkBar"></div>
     <div id="regListHost"><div class="loading-dots">Loading registrations…</div></div>
   `;
   main.querySelector('#regStatusPills').addEventListener('click', e=>{
@@ -2058,15 +2071,63 @@ async function adminRegistrations(){
     </div>`;
   let list = STATE.regFilter.status==='all' ? all : all.filter(r=>r.status===STATE.regFilter.status);
   const host = document.getElementById('regListHost');
-  if(!list.length){ host.innerHTML = `<div class="empty-state"><div class="em-icon">📋</div><p>Nothing here.</p></div>`; return; }
+  const bulkBar = document.getElementById('regBulkBar');
+  const showBulk = STATE.regFilter.status==='pending' && list.length>0;
+
+  function refreshBulkBar(){
+    if(!showBulk){ bulkBar.innerHTML=''; return; }
+    const n = selectedIds.size;
+    bulkBar.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono';font-size:12px;color:#8a7f6e;cursor:pointer;">
+          <input type="checkbox" id="regSelectAll" style="width:auto;" ${n===list.length && list.length>0?'checked':''}> Select All Visible (${list.length})
+        </label>
+        <span class="mono" style="font-size:12px;color:#8a7f6e;">${n} selected</span>
+        <button class="btn-approve" id="bulkApproveBtn" ${n===0?'disabled':''} style="${n===0?'opacity:.5;cursor:not-allowed;':''}">Approve Selected (${n})</button>
+        <button class="btn-reject" id="bulkRejectBtn" ${n===0?'disabled':''} style="${n===0?'opacity:.5;cursor:not-allowed;':''}">Reject Selected (${n})</button>
+      </div>`;
+    document.getElementById('regSelectAll').addEventListener('change', e=>{
+      if(e.target.checked){ list.forEach(r=>selectedIds.add(r.id)); }
+      else{ selectedIds.clear(); }
+      host.querySelectorAll('.reg-checkbox').forEach(cb=>{ cb.checked = selectedIds.has(cb.dataset.id); });
+      refreshBulkBar();
+    });
+    if(n>0){
+      document.getElementById('bulkApproveBtn').addEventListener('click', async ()=>{
+        if(!confirm(`Approve ${n} selected registration${n>1?'s':''} and issue Player IDs?`)) return;
+        const btn = document.getElementById('bulkApproveBtn'); btn.disabled=true; btn.textContent='Approving…';
+        const results = await Promise.all([...selectedIds].map(async id=>{
+          const r = all.find(x=>x.id===id);
+          const sport = getSport(r.sport_id);
+          return tUpdate('registrations', id, {status:'approved', player_id: genPlayerId(sport)});
+        }));
+        const failed = results.filter(r=>!r.ok).length;
+        toast(failed ? `${results.length-failed} approved, ${failed} failed` : `${results.length} registrations approved`, failed?'err':'ok');
+        adminRegistrations();
+      });
+      document.getElementById('bulkRejectBtn').addEventListener('click', async ()=>{
+        if(!confirm(`Reject ${n} selected registration${n>1?'s':''}?`)) return;
+        const btn = document.getElementById('bulkRejectBtn'); btn.disabled=true; btn.textContent='Rejecting…';
+        const results = await Promise.all([...selectedIds].map(id=> tUpdate('registrations', id, {status:'rejected'})));
+        const failed = results.filter(r=>!r.ok).length;
+        toast(failed ? `${results.length-failed} rejected, ${failed} failed` : `${results.length} registrations rejected`, failed?'err':'ok');
+        adminRegistrations();
+      });
+    }
+  }
+
+  if(!list.length){ host.innerHTML = `<div class="empty-state"><div class="em-icon">📋</div><p>Nothing here.</p></div>`; refreshBulkBar(); return; }
   host.innerHTML = list.map(r=>`
     <div class="reg-item" id="regitem-${r.id}">
       <div class="rtop">
-        <div>
-          <div class="rname">${esc(r.sport_name)} — ${esc(r.event_label)}</div>
-          <div class="rmeta">${r.participants.map(p=>esc(p.name)+' ('+esc(p.age)+', '+esc(p.gender)+')').join(' · ')}</div>
-          <div class="rmeta">📞 ${esc(r.phone)} &nbsp;·&nbsp; 🏠 ${esc(r.flat)} ${r.team_name?(' · Team: '+esc(r.team_name)):''}</div>
-          <div class="rmeta">Submitted ${fmtDateTime(r.submitted_at)} ${r.fee?(' · Fee ₹'+r.fee):' · Free entry'}</div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          ${showBulk ? `<input type="checkbox" class="reg-checkbox" data-id="${r.id}" style="width:auto;margin-top:4px;">` : ''}
+          <div>
+            <div class="rname">${esc(r.sport_name)} — ${esc(r.event_label)}</div>
+            <div class="rmeta">${r.participants.map(p=>esc(p.name)+' ('+esc(p.age)+', '+esc(p.gender)+')').join(' · ')}</div>
+            <div class="rmeta">📞 ${esc(r.phone)} &nbsp;·&nbsp; 🏠 ${esc(r.flat)} ${r.team_name?(' · Team: '+esc(r.team_name)):''}</div>
+            <div class="rmeta">Submitted ${fmtDateTime(r.submitted_at)} ${r.fee?(' · Fee ₹'+r.fee):' · Free entry'}</div>
+          </div>
         </div>
         <span class="badge ${r.status==='approved'?'green':(r.status==='rejected'?'maroon':'gold')}">${r.status}</span>
       </div>
@@ -2078,6 +2139,13 @@ async function adminRegistrations(){
         <button class="btn-del" data-del-reg="${r.id}">Delete</button>
       </div>
     </div>`).join('');
+  refreshBulkBar();
+  host.querySelectorAll('.reg-checkbox').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      if(cb.checked) selectedIds.add(cb.dataset.id); else selectedIds.delete(cb.dataset.id);
+      refreshBulkBar();
+    });
+  });
   host.querySelectorAll('[data-view-shot]').forEach(el=>{
     el.addEventListener('click', async ()=>{
       const r = list.find(x=>x.id===el.dataset.viewShot);
