@@ -1680,13 +1680,13 @@ async function finalizeRegistration(row, msgArea, isFree){
   if(btn){ btn.disabled = false; btn.textContent = 'Submit Registration'; }
   if(!ok){ msgArea.innerHTML = `<div class="msg-banner err">Something went wrong saving your registration. Please try again.</div>`; return false; }
 
-  if(isFree){
-    msgArea.innerHTML = `<div class="msg-banner ok">You're in! Your Player ID is <strong>${row.player_id}</strong>. Save this for reporting on event day.</div>`;
-  }else{
-    msgArea.innerHTML = `<div class="msg-banner ok">Registration submitted — thank you! Organisers will verify your payment shortly and issue your Player ID. Check status anytime using your phone number.</div>`;
-  }
   document.getElementById('regDynamicArea').querySelectorAll('input,select,button').forEach(el=>{ if(el.id!=='regSubmitBtn') el.disabled=true; });
-  toast('Registration submitted', 'ok');
+  navigate('home');
+  // Fired just after navigating so it lands on the Home page instead of
+  // being wiped out along with the registration form it started on.
+  setTimeout(()=>{
+    toast(isFree ? `You're in! Player ID: ${row.player_id} — save this for event day.` : 'Registration submitted — organisers will verify your payment shortly.', 'ok');
+  }, 150);
   return true;
 }
 
