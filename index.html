@@ -431,17 +431,17 @@ function compressImageToBlob(file, maxW=900, quality=0.62){
   });
 }
 // Uploads a compressed image to the given bucket, returns the storage path.
-async function uploadImage(bucket, file, prefix){
+async function uploadImage(bucket, file, prefix, opts){
   const {blob} = await compressImageToBlob(file, bucket==='payment-screenshots'?1100:900, bucket==='payment-screenshots'?0.7:0.65);
-  const path = `${prefix||'img'}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
-  const {error} = await sb.storage.from(bucket).upload(path, blob, {contentType:'image/jpeg'});
+  const path = (opts && opts.path) ? opts.path : `${prefix||'img'}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
+  const {error} = await sb.storage.from(bucket).upload(path, blob, {contentType:'image/jpeg', upsert: !!(opts && opts.upsert)});
   if(error){ console.error('upload failed', error); return null; }
   return path;
 }
-function publicUrl(bucket, path){
+function publicUrl(bucket, path, bust){
   if(!path) return null;
   const {data} = sb.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+  return bust ? `${data.publicUrl}?t=${encodeURIComponent(bust)}` : data.publicUrl;
 }
 async function signedUrl(bucket, path, seconds){
   if(!path) return null;
@@ -534,6 +534,8 @@ const SPORTS = [
       <li>Relay Race — 3 person team — Girls and Boys separate categories</li>
       <li>Long Jump — Girls and Boys separate categories</li>
     </ul>
+    <h4>Age Groups</h4>
+    <p>Age-group heats will be announced on the day itself, based on final registrations and turnout — register with the child's actual age, and the Committee will group heats accordingly once everyone's checked in.</p>
     <h4>Registration</h4>
     <ul>
       <li>Only Name, Age, Gender, Phone Number and Flat Number needed</li>
@@ -555,7 +557,7 @@ const SPORTS = [
   registration:{
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
-    events:[{id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, feeType:'flatByCategory', feeByCategory:{u10:300,u14:300,open:600}, genderRule:'choose'}]
+    events:[{id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, requiredSize:3, feeType:'flatByCategory', feeByCategory:{u10:300,u14:300,open:600}, genderRule:'choose'}]
   },
   rulesHtml:`
     <h4>Categories</h4>
@@ -1081,7 +1083,7 @@ async function renderHome(){
     </section>
   `);
   const grid = document.getElementById('homeSportsGrid');
-  grid.innerHTML = SPORTS.slice(0,8).map(sportCardHtml).join('');
+  grid.innerHTML = SPORTS.map(sportCardHtml).join('');
   wireSportCards(grid);
 }
 
@@ -1216,53 +1218,34 @@ async function renderFixtures(){
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Fixtures &amp; Results</div>
         <h1 class="h-lg" style="color:var(--bright)">Who's playing, who won</h1>
+        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Fixtures boards are posted here as they're drawn up — tap any board to view it full size. Match results and any schedule changes are posted on the Updates page.</p>
       </div>
     </div>
     <section class="wrap">
-      <div class="filter-bar">
-        <select id="fxSportFilter">
-          <option value="all">All sports</option>
-          ${SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
-        </select>
-        <select id="fxStatusFilter">
-          <option value="all">All statuses</option>
-          <option value="upcoming">Upcoming</option>
-          <option value="completed">Completed</option>
-        </select>
-      </div>
       <div id="fxList"><div class="loading-dots">Loading fixtures…</div></div>
     </section>
   `);
-  document.getElementById('fxSportFilter').addEventListener('change', e=>{ STATE.fixturesFilter.sport = e.target.value; renderFxList(); });
-  document.getElementById('fxStatusFilter').addEventListener('change', e=>{ STATE.fixturesFilter.status = e.target.value; renderFxList(); });
-  await renderFxList();
-}
-async function renderFxList(){
   const host = document.getElementById('fxList');
-  if(!host) return;
-  let list = await tFetchAll('fixtures', 'date', true);
-  STATE.cache.fixtures = list;
-  const {sport, status} = STATE.fixturesFilter;
-  if(sport!=='all') list = list.filter(f=>f.sport_id===sport);
-  if(status!=='all') list = list.filter(f=>f.status===status);
-  list.sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+  const list = await tFetchAll('fixture_boards', 'sport_id', true);
   if(!list.length){
-    host.innerHTML = `<div class="empty-state"><div class="em-icon">🗓️</div><p>No fixtures posted yet for this filter. Check back soon.</p></div>`;
+    host.innerHTML = `<div class="empty-state"><div class="em-icon">🗓️</div><p>Fixtures boards haven't been posted yet — check back soon, or see Updates for the latest news.</p></div>`;
     return;
   }
-  host.innerHTML = list.map(f=>{
-    const sp = getSport(f.sport_id);
-    return `<div class="data-row">
-      <div class="mono" style="font-size:13px;color:var(--maroon);">${fmtDate(f.date)}${f.time?(' · '+f.time):''}</div>
-      <div>
-        <strong style="font-family:'Oswald';text-transform:uppercase;font-size:16px;">${sp?sp.icon+' '+sp.name:f.sport_id}</strong>
-        <div style="font-size:13.5px;color:var(--slate);margin-top:3px;">${esc(f.participants_text||'')}</div>
-        <div style="font-size:12.5px;color:var(--slate);margin-top:3px;">📍 ${esc(f.venue||'TBA')}</div>
-        ${f.result ? `<div style="margin-top:8px;font-size:13.5px;background:var(--cream-dim);padding:8px 10px;border-left:3px solid var(--gold);"><strong>Result:</strong> ${esc(f.result)}</div>` : ''}
+  host.innerHTML = `<div class="grid grid-3">${list.map(b=>{
+    const sp = getSport(b.sport_id);
+    const url = publicUrl('fixture-boards', b.image_path, b.updated_at);
+    return `<div class="card fixture-board-card" data-full="${url}" style="padding:0;overflow:hidden;cursor:pointer;">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--line);">
+        <strong style="font-family:'Oswald';text-transform:uppercase;font-size:16px;">${sp?sp.icon+' '+sp.name:b.sport_id}</strong>
       </div>
-      <div><span class="badge ${f.status==='completed'?'green':'maroon'}">${f.status}</span></div>
+      <img src="${url}" style="width:100%;display:block;">
     </div>`;
-  }).join('');
+  }).join('')}</div>`;
+  host.querySelectorAll('[data-full]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      openModal(`<button class="close-x" id="modalClose">✕</button><img src="${el.dataset.full}">`);
+    });
+  });
 }
 
 /* =========================================================
@@ -1516,7 +1499,14 @@ async function updateRegForm(sportId){
 
   const catObj = cfg.categories.find(c=>c.id===catSel.value);
   const ageRule = AGE_CATEGORY_RULES[catSel.value];
-  document.getElementById('regCategoryHint').textContent = ageRule ? ageRuleMessage(catObj?catObj.label:catSel.value, ageRule) : '';
+  const hintEl = document.getElementById('regCategoryHint');
+  if(ageRule){
+    hintEl.textContent = ageRuleMessage(catObj?catObj.label:catSel.value, ageRule);
+  }else if(cfg.categoryIsGender){
+    hintEl.textContent = 'Register with your child\'s actual age — age-group heats will be announced on the day based on turnout.';
+  }else{
+    hintEl.textContent = '';
+  }
 
   const genderWrap = document.getElementById('regGenderWrap');
   if(cfg.categoryIsGender){
@@ -1539,13 +1529,15 @@ async function updateRegForm(sportId){
   if(teamSize>1){
     fields += `<div class="field"><label>Team Name</label><input type="text" id="regTeamName" placeholder="Give your team a name"></div>`;
   }
+  const requiredSize = ev.requiredSize || teamSize;
   for(let i=0;i<teamSize;i++){
+    const isOptional = i>=requiredSize;
     fields += `
       <div class="field-group" style="border:1px solid var(--line);padding:14px;margin-bottom:14px;background:var(--cream-dim);">
-        <label style="margin-bottom:10px;">${teamSize>1?('Player '+(i+1)):'Participant'} Details</label>
+        <label style="margin-bottom:10px;">${teamSize>1?('Player '+(i+1)):'Participant'} Details${isOptional?' <span class="mono" style="color:var(--slate);text-transform:none;letter-spacing:0;">(optional substitute)</span>':''}</label>
         <div class="form-grid-2">
-          <div class="field" style="margin-bottom:10px;"><input type="text" class="p-name" placeholder="Full name" required></div>
-          <div class="field" style="margin-bottom:10px;"><input type="number" class="p-age" placeholder="Age" min="1" max="99" required></div>
+          <div class="field" style="margin-bottom:10px;"><input type="text" class="p-name" placeholder="Full name" ${isOptional?'':'required'}></div>
+          <div class="field" style="margin-bottom:10px;"><input type="number" class="p-age" placeholder="Age" min="1" max="99" ${isOptional?'':'required'}></div>
         </div>
         <select class="p-gender"><option value="">Gender</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
       </div>`;
@@ -1591,18 +1583,42 @@ async function submitRegistration(sportId){
   const ages = [...document.querySelectorAll('.p-age')].map(i=>i.value.trim());
   const genders = [...document.querySelectorAll('.p-gender')].map(i=>i.value);
   const teamNameEl = document.getElementById('regTeamName');
+  const requiredSize = ev.requiredSize || ev.teamSize;
 
   // Mandatory contact fields
   if(!/^\d{10}$/.test(phone)){ msgArea.innerHTML = `<div class="msg-banner err">Phone number is required — please enter a valid 10-digit number.</div>`; return; }
   if(!flat){ msgArea.innerHTML = `<div class="msg-banner err">Flat number is required.</div>`; return; }
-  if(names.some(n=>!n) || ages.some(a=>!a) || genders.some(g=>!g)){ msgArea.innerHTML = `<div class="msg-banner err">Please fill in name, age and gender for every participant.</div>`; return; }
+
+  // Required player slots must be fully filled in
+  for(let i=0;i<requiredSize;i++){
+    if(!names[i] || !ages[i] || !genders[i]){
+      msgArea.innerHTML = `<div class="msg-banner err">Please fill in name, age and gender for ${requiredSize>1?('Player '+(i+1)):'the participant'}.</div>`;
+      return;
+    }
+  }
+  // Optional slots (e.g. a substitute) — finish all three fields, or leave all three blank to skip
+  for(let i=requiredSize;i<ev.teamSize;i++){
+    const some = names[i] || ages[i] || genders[i];
+    const all = names[i] && ages[i] && genders[i];
+    if(some && !all){
+      msgArea.innerHTML = `<div class="msg-banner err">Player ${i+1} is optional — please finish their name, age and gender, or leave all three blank to skip them.</div>`;
+      return;
+    }
+  }
+
+  // Carry forward only the slots that were actually filled in — this drops
+  // a skipped optional substitute from the saved roster entirely.
+  const participants = names.map((n,i)=>({name:n, age:ages[i], gender:genders[i]})).filter(p=>p.name && p.age && p.gender);
+  const fNames = participants.map(p=>p.name);
+  const fAges = participants.map(p=>p.age);
+  const fGenders = participants.map(p=>p.gender);
 
   // Age vs category cross-check
   const ageRule = AGE_CATEGORY_RULES[catSel.value];
   if(ageRule){
-    const bad = ages.findIndex(a=>{ const n=Number(a); return (ageRule.min!=null && n<ageRule.min) || (ageRule.max!=null && n>ageRule.max); });
+    const bad = fAges.findIndex(a=>{ const n=Number(a); return (ageRule.min!=null && n<ageRule.min) || (ageRule.max!=null && n>ageRule.max); });
     if(bad!==-1){
-      msgArea.innerHTML = `<div class="msg-banner err">${ageRuleMessage(catObj?catObj.label:catSel.value, ageRule)} — ${names.length>1?('Player '+(bad+1)+' ('+esc(names[bad])+')'):'this participant'} is ${ages[bad]}.</div>`;
+      msgArea.innerHTML = `<div class="msg-banner err">${ageRuleMessage(catObj?catObj.label:catSel.value, ageRule)} — ${fNames.length>1?('Player '+(bad+1)+' ('+esc(fNames[bad])+')'):'this participant'} is ${fAges[bad]}.</div>`;
       return;
     }
   }
@@ -1618,14 +1634,14 @@ async function submitRegistration(sportId){
     requiredGender = gcVal==='boys' ? 'male' : gcVal==='girls' ? 'female' : gcVal==='mixed' ? 'mixed' : null;
   }
   if(requiredGender==='male' || requiredGender==='female'){
-    const bad = genders.findIndex(g=>g!==requiredGender);
+    const bad = fGenders.findIndex(g=>g!==requiredGender);
     if(bad!==-1){
-      msgArea.innerHTML = `<div class="msg-banner err">This event requires all participants to be ${requiredGender} — ${names.length>1?('Player '+(bad+1)+' ('+esc(names[bad])+')'):'this participant'} is registered as ${genders[bad]||'unspecified'}. If this doesn't fit, please contact the organisers.</div>`;
+      msgArea.innerHTML = `<div class="msg-banner err">This event requires all participants to be ${requiredGender} — ${fNames.length>1?('Player '+(bad+1)+' ('+esc(fNames[bad])+')'):'this participant'} is registered as ${fGenders[bad]||'unspecified'}. If this doesn't fit, please contact the organisers.</div>`;
       return;
     }
   }else if(requiredGender==='mixed'){
-    const maleCount = genders.filter(g=>g==='male').length;
-    const femaleCount = genders.filter(g=>g==='female').length;
+    const maleCount = fGenders.filter(g=>g==='male').length;
+    const femaleCount = fGenders.filter(g=>g==='female').length;
     if(maleCount!==1 || femaleCount!==1){
       msgArea.innerHTML = `<div class="msg-banner err">Mixed doubles needs exactly one male and one female player.</div>`;
       return;
@@ -1633,7 +1649,6 @@ async function submitRegistration(sportId){
   }
 
   // All checks passed — build the registration row (payment fields added next)
-  const participants = names.map((n,i)=>({name:n, age:ages[i], gender:genders[i]}));
   const baseRow = {
     sport_id: sportId, sport_name: s.name,
     category_id: catSel.value,
@@ -1995,58 +2010,68 @@ async function adminUpdates(){
 </script>
 <script>
 /* ---------- Admin: Fixtures & Results ---------- */
+/* ---------- Admin: Fixtures & Results (one board image per sport) ---------- */
 async function adminFixtures(){
   const main = document.getElementById('adminMain');
   main.innerHTML = `
-    <h3 class="h-md" style="margin-bottom:18px;">Add Fixture</h3>
-    <div class="form-card" style="max-width:640px;padding:22px;margin-bottom:36px;">
-      <div class="form-grid-2">
-        <div class="field"><label>Sport</label><select id="fSport">${SPORTS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</select></div>
-        <div class="field"><label>Status</label><select id="fStatus"><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></div>
+    <h3 class="h-md" style="margin-bottom:8px;">Upload Fixtures Board</h3>
+    <p class="hint" style="margin-bottom:18px;">Upload a photo of the drawn fixtures/bracket for a sport. Uploading again for the same sport replaces the previous image — there's no need to delete first.</p>
+    <div class="form-card" style="max-width:520px;padding:22px;margin-bottom:36px;">
+      <div class="field"><label>Sport</label><select id="fbSport">${SPORTS.map(s=>`<option value="${s.id}">${s.icon} ${s.name}</option>`).join('')}</select></div>
+      <div class="field">
+        <label>Fixtures Board Image</label>
+        <div class="upload-box" id="fbBox"><p class="mono" style="font-size:12px;color:var(--slate);">📎 Click to upload a photo of the fixtures board</p><input type="file" id="fbInput" accept="image/*" style="display:none;"></div>
       </div>
-      <div class="form-grid-2">
-        <div class="field"><label>Date</label><input type="date" id="fDate"></div>
-        <div class="field"><label>Time</label><input type="time" id="fTime"></div>
-      </div>
-      <div class="field"><label>Venue</label><input type="text" id="fVenue"></div>
-      <div class="field"><label>Participants / Teams</label><input type="text" id="fPart" placeholder="e.g. Team A vs Team B, or list of names"></div>
-      <div class="field"><label>Result (optional)</label><input type="text" id="fResult" placeholder="e.g. Team A won 21-15"></div>
-      <button class="btn btn-primary" id="fAddBtn">Add Fixture</button>
+      <button class="btn btn-primary" id="fbAddBtn">Upload / Replace Board</button>
     </div>
-    <h3 class="h-md" style="margin-bottom:18px;">All Fixtures</h3>
-    <div id="fList"><div class="loading-dots">Loading…</div></div>
+    <h3 class="h-md" style="margin-bottom:18px;">Current Boards</h3>
+    <div id="fbList" class="grid grid-3"><div class="loading-dots">Loading…</div></div>
   `;
-  document.getElementById('fAddBtn').addEventListener('click', async ()=>{
-    const item = {
-      sport_id:document.getElementById('fSport').value,
-      date:document.getElementById('fDate').value || null, time:document.getElementById('fTime').value,
-      venue:document.getElementById('fVenue').value.trim(), participants_text:document.getElementById('fPart').value.trim(),
-      status:document.getElementById('fStatus').value, result:document.getElementById('fResult').value.trim()
-    };
-    const {ok} = await tInsert('fixtures', item);
-    if(ok) toast('Fixture added', 'ok'); else toast('Could not add fixture', 'err');
+  let fbFile = null;
+  const box = document.getElementById('fbBox');
+  const input = document.getElementById('fbInput');
+  box.addEventListener('click', ()=>input.click());
+  input.addEventListener('change', async ()=>{
+    const f = input.files[0]; if(!f) return;
+    fbFile = f;
+    const {dataUrl} = await compressImageToBlob(f, 1400, 0.72);
+    box.innerHTML = `<img src="${dataUrl}" style="max-height:180px;margin:0 auto;">`;
+    box.addEventListener('click', ()=>input.click());
+  });
+  document.getElementById('fbAddBtn').addEventListener('click', async ()=>{
+    if(!fbFile){ toast('Choose an image first', 'err'); return; }
+    const sportId = document.getElementById('fbSport').value;
+    const path = await uploadImage('fixture-boards', fbFile, null, {path:`${sportId}.jpg`, upsert:true});
+    if(!path){ toast('Upload failed — try again', 'err'); return; }
+    const {error} = await sb.from('fixture_boards').upsert(
+      {sport_id: sportId, image_path: path, updated_at: new Date().toISOString()},
+      {onConflict: 'sport_id'}
+    );
+    if(error){ console.error(error); toast('Could not save board — try again', 'err'); return; }
+    toast('Fixtures board uploaded', 'ok');
     adminFixtures();
   });
-  const list = await tFetchAll('fixtures', 'date', false);
-  const host = document.getElementById('fList');
-  if(!list.length){ host.innerHTML = `<div class="empty-state"><p>No fixtures yet.</p></div>`; return; }
-  host.innerHTML = list.map(f=>{
-    const sp = getSport(f.sport_id);
-    return `<div class="reg-item">
-      <div class="rtop">
-        <div>
-          <div class="rname" style="font-size:16px;">${sp?sp.icon+' '+sp.name:f.sport_id}</div>
-          <div class="rmeta">${fmtDate(f.date)}${f.time?(' · '+f.time):''} · 📍 ${esc(f.venue||'TBA')}</div>
-          <div class="rmeta">${esc(f.participants_text||'')}</div>
-          ${f.result?`<div class="rmeta">🏆 ${esc(f.result)}</div>`:''}
-        </div>
-        <span class="badge ${f.status==='completed'?'green':'maroon'}">${f.status}</span>
-      </div>
-      <div class="ractions"><button class="btn-del" data-del-fx="${f.id}">Delete</button></div>
+
+  const list = await tFetchAll('fixture_boards', 'sport_id', true);
+  const host = document.getElementById('fbList');
+  if(!list.length){ host.innerHTML = `<div class="empty-state"><p>No boards uploaded yet.</p></div>`; return; }
+  host.innerHTML = list.map(b=>{
+    const sp = getSport(b.sport_id);
+    const url = publicUrl('fixture-boards', b.image_path, b.updated_at);
+    return `<div class="card" style="padding:14px;">
+      <div class="tag">${sp?sp.icon+' '+sp.name:b.sport_id}</div>
+      <img src="${url}" style="margin-top:10px;border:1px solid var(--line);border-radius:var(--radius);">
+      <div class="ractions" style="margin-top:10px;"><button class="btn-del" data-del-fb="${b.sport_id}" data-path="${b.image_path}">Remove</button></div>
     </div>`;
   }).join('');
-  host.querySelectorAll('[data-del-fx]').forEach(el=>{
-    el.addEventListener('click', async ()=>{ if(!confirm('Delete this fixture?')) return; await tDelete('fixtures', el.dataset.delFx); toast('Deleted','info'); adminFixtures(); });
+  host.querySelectorAll('[data-del-fb]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      if(!confirm('Remove this fixtures board?')) return;
+      await sb.storage.from('fixture-boards').remove([el.dataset.path]);
+      await tDelete('fixture_boards', el.dataset.delFb);
+      toast('Removed', 'info');
+      adminFixtures();
+    });
   });
 }
 

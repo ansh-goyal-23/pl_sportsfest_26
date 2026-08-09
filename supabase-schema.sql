@@ -43,6 +43,15 @@ create table if not exists fixtures (
   result text
 );
 
+-- One drawn fixtures/bracket image per sport, replaceable any time. This
+-- replaced entering matches one by one — organisers just upload a photo
+-- of the fixtures board and it's shown under that sport's name.
+create table if not exists fixture_boards (
+  sport_id text primary key,
+  image_path text not null,
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists sponsors (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -70,6 +79,7 @@ insert into settings (id, upi_id) values ('main', '') on conflict (id) do nothin
 alter table registrations enable row level security;
 alter table updates enable row level security;
 alter table fixtures enable row level security;
+alter table fixture_boards enable row level security;
 alter table sponsors enable row level security;
 alter table photos enable row level security;
 alter table settings enable row level security;
@@ -84,6 +94,9 @@ create policy "organisers manage updates" on updates for all to authenticated us
 
 create policy "public read fixtures" on fixtures for select to anon using (true);
 create policy "organisers manage fixtures" on fixtures for all to authenticated using (true) with check (true);
+
+create policy "public read fixture boards" on fixture_boards for select to anon using (true);
+create policy "organisers manage fixture boards" on fixture_boards for all to authenticated using (true) with check (true);
 
 create policy "public read sponsors" on sponsors for select to anon using (true);
 create policy "organisers manage sponsors" on sponsors for all to authenticated using (true) with check (true);
@@ -120,6 +133,9 @@ insert into storage.buckets (id, name, public)
   on conflict (id) do nothing;
 insert into storage.buckets (id, name, public)
   values ('event-photos', 'event-photos', true)
+  on conflict (id) do nothing;
+insert into storage.buckets (id, name, public)
+  values ('fixture-boards', 'fixture-boards', true)
   on conflict (id) do nothing;
 
 create policy "anon upload payment screenshots" on storage.objects
@@ -159,6 +175,15 @@ create policy "organisers write event photos" on storage.objects
   for insert to authenticated with check (bucket_id = 'event-photos');
 create policy "organisers delete event photos" on storage.objects
   for delete to authenticated using (bucket_id = 'event-photos');
+
+create policy "public read fixture boards" on storage.objects
+  for select to anon using (bucket_id = 'fixture-boards');
+create policy "organisers write fixture boards" on storage.objects
+  for insert to authenticated with check (bucket_id = 'fixture-boards');
+create policy "organisers update fixture boards" on storage.objects
+  for update to authenticated using (bucket_id = 'fixture-boards') with check (bucket_id = 'fixture-boards');
+create policy "organisers delete fixture boards" on storage.objects
+  for delete to authenticated using (bucket_id = 'fixture-boards');
 
 -- =========================================================
 -- Done. Next steps (see README.md):
