@@ -43,13 +43,17 @@ create table if not exists fixtures (
   result text
 );
 
--- One drawn fixtures/bracket image per sport, replaceable any time. This
--- replaced entering matches one by one — organisers just upload a photo
--- of the fixtures board and it's shown under that sport's name.
+-- One drawn fixtures/bracket image per sport + category (+ gender, where
+-- that sport actually splits by gender), replaceable any time. Organisers
+-- just upload a photo of the fixtures board rather than entering matches
+-- one by one.
 create table if not exists fixture_boards (
-  sport_id text primary key,
+  sport_id text not null,
+  category_id text not null,
+  gender text not null default '',
   image_path text not null,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  primary key (sport_id, category_id, gender)
 );
 
 create table if not exists sponsors (
