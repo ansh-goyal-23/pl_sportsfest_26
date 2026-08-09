@@ -180,7 +180,21 @@ section{padding:64px 0;}
 .card .tag{font-family:'IBM Plex Mono';font-size:10.5px;letter-spacing:.09em;color:var(--gold);text-transform:uppercase;}
 .card h3{font-size:21px;margin-top:8px;}
 .card p{color:var(--slate);font-size:14.5px;line-height:1.55;margin-top:10px;}
-.sport-card{cursor:pointer;}
+.sport-card{cursor:pointer;overflow:hidden;padding:0;}
+.card-cover{height:118px;position:relative;overflow:hidden;}
+.card-cover svg{position:absolute;inset:0;width:100%;height:100%;transition:.3s;}
+.sport-card:hover .card-cover svg{transform:scale(1.06);}
+.card-content{position:relative;z-index:1;padding:20px 22px 22px;}
+.cv-freedom-run{background:linear-gradient(135deg,#F4A340,#E8613D);}
+.cv-field-games{background:linear-gradient(135deg,#4FA8E0,#2F6FBF);}
+.cv-basketball{background:linear-gradient(135deg,#3F7FA8,#1F5B7A);}
+.cv-lawn-tennis{background:linear-gradient(135deg,#8BC34A,#2F6B3F);}
+.cv-badminton{background:linear-gradient(135deg,#C1442D,#7A2418);}
+.cv-table-tennis{background:linear-gradient(135deg,#2F6FBF,#1B3A66);}
+.cv-chess{background:linear-gradient(135deg,#2B2B3D,#565676);}
+.cv-carrom{background:linear-gradient(135deg,#D9A441,#9C6B1F);}
+.cv-pool{background:linear-gradient(135deg,#1F5B3F,#123324);}
+.cv-football{background:linear-gradient(135deg,#3FA34D,#1F6B2E);}
 .sport-card .meta{display:flex;gap:14px;margin-top:14px;font-family:'IBM Plex Mono';font-size:11px;color:var(--slate);flex-wrap:wrap;}
 .sport-card .meta span{display:flex;align-items:center;gap:5px;}
 
@@ -763,6 +777,67 @@ const SPORTS = [
 
 function getSport(id){ return SPORTS.find(s=>s.id===id); }
 
+/* Original full-color illustrated cover art per sport — a gradient "photo"
+   band plus a bold filled icon, not stock photography. Keeps the site
+   fast, dependency-free, and copyright-clean while still reading as a
+   colorful picture rather than a technical line-art glyph.
+   viewBox 0 0 300 120, positioned to sit as a card's top cover strip. */
+const SPORT_COVER_ART = {
+  'freedom-run': `<circle cx="230" cy="25" r="15" fill="#FFE1A6"/>
+    <circle cx="151" cy="27" r="9" fill="#F5F3EC"/>
+    <path d="M147 35 L134 60 L150 67 L140 100" stroke="#F5F3EC" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M150 67 L172 82" stroke="#F5F3EC" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M134 60 L108 50" stroke="#F5F3EC" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M140 100 L122 112" stroke="#F5F3EC" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M140 100 L160 110" stroke="#F5F3EC" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M20 112 H280" stroke="#FFE1A6" stroke-width="2" stroke-dasharray="10 10" opacity=".5"/>`,
+  'field-games': `<path d="M132 8 L150 45 L168 8" stroke="#F0B356" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M129 8 L147 45 L165 8" stroke="#F5F3EC" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+    <circle cx="150" cy="72" r="30" fill="#F0B356" stroke="#9C6B1F" stroke-width="3"/>
+    <path d="M150 55 L159 68 L150 88 L141 68 Z" fill="#F5F3EC"/>`,
+  'basketball': `<circle cx="150" cy="60" r="42" fill="#F4823A" stroke="#7A2E12" stroke-width="3"/>
+    <path d="M108 60 H192" stroke="#7A2E12" stroke-width="3"/>
+    <path d="M150 18 V102" stroke="#7A2E12" stroke-width="3"/>
+    <path d="M120 28 Q150 60 120 92" stroke="#7A2E12" stroke-width="3" fill="none"/>
+    <path d="M180 28 Q150 60 180 92" stroke="#7A2E12" stroke-width="3" fill="none"/>`,
+  'lawn-tennis': `<ellipse cx="126" cy="45" rx="24" ry="30" fill="none" stroke="#F5F3EC" stroke-width="5"/>
+    <path d="M126 75 L126 108" stroke="#B9843E" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="188" cy="88" r="15" fill="#DCE84A" stroke="#8FA82A" stroke-width="2"/>
+    <path d="M178 82 Q188 88 178 94 M198 82 Q188 88 198 94" stroke="#F5F3EC" stroke-width="1.5" fill="none"/>`,
+  'badminton': `<path d="M150 20 L134 55 L166 55 Z" fill="#F5F3EC"/>
+    <ellipse cx="150" cy="58" rx="16" ry="7" fill="#F0917C"/>
+    <path d="M138 26 L120 52 M150 20 L150 52 M162 26 L180 52" stroke="#F5F3EC" stroke-width="2" opacity=".65"/>
+    <path d="M150 65 L150 106" stroke="#F5F3EC" stroke-width="4" stroke-linecap="round" opacity=".85"/>`,
+  'table-tennis': `<rect x="118" y="18" width="46" height="55" rx="23" fill="#F0917C" stroke="#F5F3EC" stroke-width="3"/>
+    <path d="M141 73 L141 104" stroke="#5A3A22" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="196" cy="82" r="11" fill="#F5F3EC"/>`,
+  'chess': `<line x1="150" y1="18" x2="150" y2="34" stroke="#F0B356" stroke-width="4" stroke-linecap="round"/>
+    <line x1="142" y1="26" x2="158" y2="26" stroke="#F0B356" stroke-width="4" stroke-linecap="round"/>
+    <path d="M133 38 Q150 50 167 38 L172 70 Q150 81 128 70 Z" fill="#F0B356"/>
+    <path d="M120 100 H180 L172 76 H128 Z" fill="#E8A33D"/>`,
+  'carrom': `<circle cx="150" cy="60" r="42" fill="none" stroke="#F5F3EC" stroke-width="4"/>
+    <circle cx="150" cy="60" r="7" fill="#F0917C"/>
+    <circle cx="132" cy="46" r="6" fill="#F5F3EC"/>
+    <circle cx="168" cy="46" r="6" fill="#2B2B3D"/>
+    <circle cx="132" cy="74" r="6" fill="#2B2B3D"/>
+    <circle cx="168" cy="74" r="6" fill="#F5F3EC"/>`,
+  'pool': `<circle cx="150" cy="34" r="9" fill="#F0B356"/>
+    <circle cx="138" cy="52" r="9" fill="#7FB8E8"/>
+    <circle cx="162" cy="52" r="9" fill="#F0917C"/>
+    <circle cx="126" cy="70" r="9" fill="#F5F3EC"/>
+    <circle cx="150" cy="70" r="9" fill="#C9A6E8"/>
+    <circle cx="174" cy="70" r="9" fill="#8FD6B0"/>
+    <path d="M90 112 L118 84" stroke="#B9843E" stroke-width="6" stroke-linecap="round"/>`,
+  'football': `<circle cx="150" cy="60" r="42" fill="#F5F3EC" stroke="#1B1B1B" stroke-width="2"/>
+    <polygon points="150,38 163,48 158,64 142,64 137,48" fill="#1B1B1B"/>
+    <path d="M150 18 L150 38 M192 60 L163 48 M177 98 L158 64 M123 98 L142 64 M108 60 L137 48" stroke="#1B1B1B" stroke-width="2.5"/>`,
+};
+function sportCoverHtml(id){
+  const shapes = SPORT_COVER_ART[id];
+  if(!shapes) return '';
+  return `<div class="card-cover cv-${id}"><svg viewBox="0 0 300 120" preserveAspectRatio="xMidYMid slice">${shapes}</svg></div>`;
+}
+
 /* Age bounds implied by each category, keyed by category id (shared
    across sports since the ids mean the same thing everywhere they
    appear). Categories not listed here (e.g. "open", "boys"/"girls")
@@ -994,10 +1069,13 @@ async function renderHome(){
 
 function sportCardHtml(s){
   return `<div class="card sport-card" data-sport="${s.id}">
-    <div class="tag">${s.dateLabel}</div>
-    <h3>${s.icon} ${s.name}</h3>
-    <p>${s.tagline}</p>
-    <div class="meta"><span>📍 ${s.venue}</span><span>💳 ${s.feeLabel}</span></div>
+    ${sportCoverHtml(s.id)}
+    <div class="card-content">
+      <div class="tag">${s.dateLabel}</div>
+      <h3>${s.icon} ${s.name}</h3>
+      <p>${s.tagline}</p>
+      <div class="meta"><span>📍 ${s.venue}</span><span>💳 ${s.feeLabel}</span></div>
+    </div>
   </div>`;
 }
 function wireSportCards(scope){
@@ -1100,9 +1178,12 @@ async function renderRulesIndex(){
   const grid = document.getElementById('rulesGrid');
   grid.innerHTML = SPORTS.map(s=>`
     <div class="card sport-card" data-sport="${s.id}">
-      <div class="tag">Rulebook</div>
-      <h3>${s.icon} ${s.name}</h3>
-      <p>${s.tagline}</p>
+      ${sportCoverHtml(s.id)}
+      <div class="card-content">
+        <div class="tag">Rulebook</div>
+        <h3>${s.icon} ${s.name}</h3>
+        <p>${s.tagline}</p>
+      </div>
     </div>`).join('');
   wireSportCards(grid);
 }
