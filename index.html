@@ -762,19 +762,15 @@ const SPORTS = [
 
 {
   id:'football', name:'Football', short:'Auction format', icon:'⚽',
-  dateLabel:'22–23 Aug · Evening', venue:'Ground Nearby', feeLabel:'₹300 per person',
-  tagline:'Individual paid registration followed by a player auction to form teams.',
-  registration:{
-    mode:'form',
-    categories:[{id:'open',label:'Open'}],
-    events:[{id:'individual', label:'Individual Registration', teamSize:1, feeType:'flat', fee:300, genderRule:'any'}]
-  },
+  dateLabel:'22–23 Aug · Evening', venue:'Ground Nearby', feeLabel:'₹300 per person — registration opens soon',
+  tagline:'Individual paid registration followed by a player auction to form teams. Registration isn\'t open yet.',
+  registration:{ mode:'contact' },
   rulesHtml:`
     <h4>Format</h4>
     <p>Football will run as individual paid registrations, followed by a player auction to draft teams — rather than players registering as pre-formed teams.</p>
     <h4>Registration fee</h4>
     <ul><li>₹300 per person, individual registration</li><li>Teams will be formed via an auction after registrations close</li></ul>
-    <p>Full auction process and match schedule will be posted on the Updates page.</p>
+    <p>Registration isn't open yet — full auction process and the exact opening date will be posted on the Updates page. Contact the organisers if you'd like to be notified as soon as it opens.</p>
   `
 }
 ];
@@ -1410,16 +1406,13 @@ async function renderContact(){
 /* =========================================================
    PAGE: REGISTER
    ========================================================= */
-let REG_UPLOAD_FILE = null;    // holds the raw File for upload on submit
-let REG_UPLOAD_PREVIEW = null; // holds a base64 preview only, for display
-
 async function renderRegister(preSportId){
   renderShell(`
     <div class="detail-band">
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Register</div>
         <h1 class="h-lg" style="color:var(--bright)">Sign up for an event</h1>
-        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Fill the form, pay if there's a fee, and upload your payment screenshot. Organisers verify each payment before your Player ID is issued.</p>
+        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Fill in your details and submit. If there's an entry fee, you'll get a payment QR code and can upload your screenshot right after — organisers verify each payment before your Player ID is issued.</p>
       </div>
     </div>
     <section class="wrap">
@@ -1455,7 +1448,6 @@ async function renderRegister(preSportId){
 
 function renderRegDynamic(sportId){
   const area = document.getElementById('regDynamicArea');
-  REG_UPLOAD_FILE = null; REG_UPLOAD_PREVIEW = null;
   if(!sportId){ area.innerHTML=''; return; }
   const s = getSport(sportId);
   if(s.registration.mode==='contact'){
@@ -1565,43 +1557,12 @@ async function updateRegForm(sportId){
     payArea.innerHTML = `<div class="msg-banner ok">This event is free to enter — no payment needed. Just submit the form below.</div>`;
   }else{
     const feeAmount = computeFee(ev, catSel.value);
-    const settings = await getSettings();
-    payArea.innerHTML = `
-      <div class="field">
-        <label>4. Payment — ₹${feeAmount}</label>
-        <div class="qr-box" id="qrHost"><p class="mono" style="font-size:12px;color:var(--slate);">Loading payment QR…</p></div>
-        <p class="hint">Scan and pay ₹${feeAmount} via UPI, then upload a screenshot of the successful payment below.</p>
-      </div>
-      <div class="field">
-        <label>Upload Payment Screenshot</label>
-        <div class="upload-box" id="uploadBox">
-          <p class="mono" style="font-size:12.5px;color:var(--slate);">📎 Click to upload payment screenshot (JPG/PNG)</p>
-          <input type="file" id="uploadInput" accept="image/*" style="display:none;">
-        </div>
-      </div>`;
-    renderPaymentQR(feeAmount, s.name);
-    const box = document.getElementById('uploadBox');
-    const input = document.getElementById('uploadInput');
-    box.addEventListener('click', ()=>input.click());
-    input.addEventListener('change', async ()=>{
-      const f = input.files[0]; if(!f) return;
-      box.innerHTML = `<p class="mono" style="font-size:12px;">Uploading screenshot…</p>`;
-      try{
-        const {dataUrl} = await compressImageToBlob(f, 1100, 0.7);
-        REG_UPLOAD_FILE = f;
-        REG_UPLOAD_PREVIEW = dataUrl;
-        box.classList.add('has-img');
-        box.innerHTML = `<img src="${dataUrl}" style="max-height:180px;margin:0 auto;"><p class="mono" style="font-size:11px;color:var(--green);margin-top:8px;">✓ Screenshot attached — click to replace</p>`;
-        box.addEventListener('click', ()=>input.click());
-      }catch(e){
-        box.innerHTML = `<p class="mono" style="font-size:12px;color:var(--maroon);">Couldn't read that image, please try again.</p>`;
-      }
-    });
+    payArea.innerHTML = `<div class="msg-banner info">Entry fee: ₹${feeAmount}. After you submit this form, you'll get a payment QR code and can upload your payment screenshot to finish registering.</div>`;
   }
 }
 
-async function renderPaymentQR(amount, sportName){
-  const host = document.getElementById('qrHost');
+async function renderPaymentQR(amount, sportName, hostId){
+  const host = document.getElementById(hostId || 'qrHost');
   if(!host) return;
   const settings = await getSettings();
   if(!settings.upiId){
@@ -1609,9 +1570,9 @@ async function renderPaymentQR(amount, sportName){
     return;
   }
   const upiUrl = `upi://pay?pa=${encodeURIComponent(settings.upiId)}&pn=${encodeURIComponent('Prateek Laurel Sports Fest')}&am=${amount}&cu=INR&tn=${encodeURIComponent(sportName+' registration')}`;
-  host.innerHTML = `<canvas id="qrCanvas"></canvas><p class="mono" style="font-size:12px;margin-top:10px;">${esc(settings.upiId)}</p><p class="mono" style="font-size:15px;font-weight:700;color:var(--maroon);">₹${amount}</p>`;
+  host.innerHTML = `<canvas id="qrCanvas-${hostId||'qrHost'}"></canvas><p class="mono" style="font-size:12px;margin-top:10px;">${esc(settings.upiId)}</p><p class="mono" style="font-size:15px;font-weight:700;color:var(--maroon);">₹${amount}</p>`;
   try{
-    new QRious({element: document.getElementById('qrCanvas'), value: upiUrl, size:200, foreground:'#0B141F', background:'#F5F3EC'});
+    new QRious({element: document.getElementById(`qrCanvas-${hostId||'qrHost'}`), value: upiUrl, size:200, foreground:'#0B141F', background:'#F5F3EC'});
   }catch(e){ host.innerHTML += `<p class="mono" style="font-size:11px;color:var(--maroon);">QR generation failed — pay via UPI ID above.</p>`; }
 }
 
@@ -1621,7 +1582,8 @@ async function submitRegistration(sportId){
   const ev = currentEventConfig(sportId);
   const catSel = document.getElementById('regCategory');
   const catObj = cfg.categories.find(c=>c.id===catSel.value);
-  const isFree = computeFee(ev, catSel.value)===0;
+  const feeAmount = computeFee(ev, catSel.value);
+  const isFree = feeAmount===0;
   const msgArea = document.getElementById('regMsgArea');
   const phone = document.getElementById('regPhone').value.trim();
   const flat = document.getElementById('regFlat').value.trim();
@@ -1634,7 +1596,6 @@ async function submitRegistration(sportId){
   if(!/^\d{10}$/.test(phone)){ msgArea.innerHTML = `<div class="msg-banner err">Phone number is required — please enter a valid 10-digit number.</div>`; return; }
   if(!flat){ msgArea.innerHTML = `<div class="msg-banner err">Flat number is required.</div>`; return; }
   if(names.some(n=>!n) || ages.some(a=>!a) || genders.some(g=>!g)){ msgArea.innerHTML = `<div class="msg-banner err">Please fill in name, age and gender for every participant.</div>`; return; }
-  if(!isFree && !REG_UPLOAD_FILE){ msgArea.innerHTML = `<div class="msg-banner err">Please upload your payment screenshot before submitting.</div>`; return; }
 
   // Age vs category cross-check
   const ageRule = AGE_CATEGORY_RULES[catSel.value];
@@ -1671,35 +1632,38 @@ async function submitRegistration(sportId){
     }
   }
 
-  const btn = document.getElementById('regSubmitBtn');
-  btn.disabled = true; btn.textContent = 'Submitting…';
-
-  let screenshotPath = null;
-  if(!isFree){
-    screenshotPath = await uploadImage('payment-screenshots', REG_UPLOAD_FILE, sportId);
-    if(!screenshotPath){
-      btn.disabled = false; btn.textContent = 'Submit Registration';
-      msgArea.innerHTML = `<div class="msg-banner err">Couldn't upload your screenshot — please check your connection and try again.</div>`;
-      return;
-    }
-  }
-
+  // All checks passed — build the registration row (payment fields added next)
   const participants = names.map((n,i)=>({name:n, age:ages[i], gender:genders[i]}));
-  const row = {
+  const baseRow = {
     sport_id: sportId, sport_name: s.name,
     category_id: catSel.value,
     event_id: ev.id, event_label: ev.label,
     gender_cat: document.getElementById('regGenderCat')?.value || null,
     team_name: teamNameEl ? teamNameEl.value.trim() : null,
     participants, phone, flat,
-    fee: isFree?0:computeFee(ev, catSel.value),
-    screenshot_path: screenshotPath,
-    status: isFree ? 'approved' : 'pending',
-    player_id: isFree ? genPlayerId(s) : null,
+    fee: feeAmount,
   };
+
+  if(isFree){
+    baseRow.screenshot_path = null;
+    baseRow.status = 'approved';
+    baseRow.player_id = genPlayerId(s);
+    await finalizeRegistration(baseRow, msgArea, true);
+  }else{
+    msgArea.innerHTML = '';
+    openPaymentModal(s, feeAmount, baseRow, msgArea);
+  }
+}
+
+// Saves the finished row to Supabase and updates the form's message area.
+// Returns true on success so callers (e.g. the payment modal) know whether
+// to close themselves.
+async function finalizeRegistration(row, msgArea, isFree){
+  const btn = document.getElementById('regSubmitBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Submitting…'; }
   const {ok} = await tInsert('registrations', row);
-  btn.disabled = false; btn.textContent = 'Submit Registration';
-  if(!ok){ msgArea.innerHTML = `<div class="msg-banner err">Something went wrong saving your registration. Please try again.</div>`; return; }
+  if(btn){ btn.disabled = false; btn.textContent = 'Submit Registration'; }
+  if(!ok){ msgArea.innerHTML = `<div class="msg-banner err">Something went wrong saving your registration. Please try again.</div>`; return false; }
 
   if(isFree){
     msgArea.innerHTML = `<div class="msg-banner ok">You're in! Your Player ID is <strong>${row.player_id}</strong>. Save this for reporting on event day.</div>`;
@@ -1708,6 +1672,68 @@ async function submitRegistration(sportId){
   }
   document.getElementById('regDynamicArea').querySelectorAll('input,select,button').forEach(el=>{ if(el.id!=='regSubmitBtn') el.disabled=true; });
   toast('Registration submitted', 'ok');
+  return true;
+}
+
+// Shown after the form passes every check, for events with a fee: the QR
+// code and screenshot upload live here instead of inline in the form, so
+// the person only sees payment details once everything else is confirmed.
+function openPaymentModal(s, feeAmount, baseRow, msgArea){
+  let modalFile = null;
+  openModal(`
+    <button class="close-x" id="modalClose">✕</button>
+    <h3 style="font-size:19px;">Complete Your Payment</h3>
+    <p class="hint" style="margin-top:6px;">Scan and pay ₹${feeAmount} via UPI, then upload your payment screenshot to finish registering for ${esc(s.name)}.</p>
+    <div class="qr-box" id="qrHostModal" style="margin-top:14px;"><p class="mono" style="font-size:12px;color:var(--slate);">Loading payment QR…</p></div>
+    <div class="field" style="margin-top:16px;">
+      <label>Upload Payment Screenshot</label>
+      <div class="upload-box" id="uploadBoxModal">
+        <p class="mono" style="font-size:12.5px;color:var(--slate);">📎 Click to upload payment screenshot (JPG/PNG)</p>
+        <input type="file" id="uploadInputModal" accept="image/*" style="display:none;">
+      </div>
+    </div>
+    <div id="modalPayMsg"></div>
+    <button class="btn btn-primary" id="modalConfirmBtn" style="width:100%;justify-content:center;margin-top:16px;">Confirm &amp; Submit Registration</button>
+  `);
+  renderPaymentQR(feeAmount, s.name, 'qrHostModal');
+
+  const box = document.getElementById('uploadBoxModal');
+  const input = document.getElementById('uploadInputModal');
+  box.addEventListener('click', ()=>input.click());
+  input.addEventListener('change', async ()=>{
+    const f = input.files[0]; if(!f) return;
+    box.innerHTML = `<p class="mono" style="font-size:12px;">Reading screenshot…</p>`;
+    try{
+      const {dataUrl} = await compressImageToBlob(f, 1100, 0.7);
+      modalFile = f;
+      box.classList.add('has-img');
+      box.innerHTML = `<img src="${dataUrl}" style="max-height:180px;margin:0 auto;"><p class="mono" style="font-size:11px;color:var(--green);margin-top:8px;">✓ Screenshot attached — click to replace</p>`;
+      box.addEventListener('click', ()=>input.click());
+    }catch(e){
+      box.innerHTML = `<p class="mono" style="font-size:12px;color:var(--maroon);">Couldn't read that image, please try again.</p>`;
+    }
+  });
+
+  document.getElementById('modalConfirmBtn').addEventListener('click', async ()=>{
+    const modalMsg = document.getElementById('modalPayMsg');
+    if(!modalFile){ modalMsg.innerHTML = `<div class="msg-banner err">Please upload your payment screenshot first.</div>`; return; }
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+    confirmBtn.disabled = true; confirmBtn.textContent = 'Submitting…';
+    const screenshotPath = await uploadImage('payment-screenshots', modalFile, baseRow.sport_id);
+    if(!screenshotPath){
+      confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Submit Registration';
+      modalMsg.innerHTML = `<div class="msg-banner err">Couldn't upload your screenshot — please check your connection and try again.</div>`;
+      return;
+    }
+    const row = {...baseRow, screenshot_path: screenshotPath, status:'pending', player_id: null};
+    const ok = await finalizeRegistration(row, msgArea, false);
+    if(ok){
+      document.querySelector('.modal-backdrop')?.remove();
+    }else{
+      confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Submit Registration';
+      modalMsg.innerHTML = `<div class="msg-banner err">Something went wrong saving your registration. Please try again.</div>`;
+    }
+  });
 }
 
 function genPlayerId(sport){
