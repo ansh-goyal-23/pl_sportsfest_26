@@ -533,32 +533,47 @@ const SPORTS = [
   id:'basketball', name:'3+1 Basketball', short:'Half-court · 3v3', icon:'🏀',
   poc:[{name:'Ansh',phone:'9667184789'}],
   fixtureGenders:['male','female'],
-  dateLabel:'16 Aug', venue:"Society's Basketball Court", feeLabel:'₹300 U10/U14 · ₹600 Open',
-  tagline:'Half-court 3-vs-3 basketball with one substitute, across U10, U14 and Open categories.',
+  dateLabel:'16 Aug', venue:"Society's Basketball Court", feeLabel:'₹300/team U10 & U14 · ₹200/person Open (auction)',
+  tagline:'Half-court 3-vs-3 — team registration for U10/U14, individual registration + player auction for Open.',
   registration:{
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
-    events:[{id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, requiredSize:3, feeType:'flatByCategory', feeByCategory:{u10:300,u14:300,open:600}, genderRule:'choose'}]
+    events:[
+      {id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, requiredSize:3, feeType:'flatByCategory', feeByCategory:{u10:300,u14:300}, genderRule:'choose'},
+      {id:'individual', label:'Individual Registration (Player Auction)', teamSize:1, feeType:'flat', fee:200, genderRule:'choose'}
+    ],
+    eventsByCategory: { 'u10': ['team'], 'u14': ['team'], 'open': ['individual'] }
   },
   rulesHtml:`
+    <h4>Format</h4>
+    <p>Half-Court 3+1 Basketball · Event Date: 16 August 2026</p>
     <h4>Categories</h4>
     <p>Under 10, Under 14, and Open — separate competitions for Boys and Girls.</p>
+    <h4>Under 10 &amp; Under 14</h4>
+    <ul>
+      <li>Participants register in their respective age category, as a full team</li>
+      <li>The 3+1 half-court format is followed</li>
+    </ul>
+    <h4>Open Category</h4>
+    <ul>
+      <li>Individual registration — register as yourself, not as a team</li>
+      <li>Registration fee: ₹200 per person</li>
+      <li>Players take part in a player auction for team formation</li>
+      <li>Players are divided into teams through the auction, to keep things fair and balanced</li>
+    </ul>
     <h4>Team composition</h4>
     <ul>
-      <li>3 playing members + 1 substitute per team</li>
-      <li>Only registered players are eligible; team changes after registration are not permitted</li>
+      <li>Each team consists of 3 playing members + 1 substitute</li>
+      <li>Only registered players are eligible to participate</li>
+      <li>For Open, teams are formed through the player auction</li>
     </ul>
     <h4>Match format</h4>
     <ul>
       <li>Half-court, 3 vs 3, one substitute per team</li>
       <li>Separate fixtures for Boys and Girls in each applicable age category</li>
     </ul>
-    <h4>Match duration — 20 minutes total</h4>
-    <table><tr><th>Period</th><th>Duration</th></tr>
-    <tr><td>1st Quarter</td><td>5 min</td></tr><tr><td>Break</td><td>1 min</td></tr>
-    <tr><td>2nd Quarter</td><td>5 min</td></tr><tr><td>Half Time</td><td>5 min</td></tr>
-    <tr><td>3rd Quarter</td><td>5 min</td></tr><tr><td>Break</td><td>1 min</td></tr>
-    <tr><td>4th Quarter</td><td>5 min</td></tr></table>
+    <h4>Match duration</h4>
+    <p>To be announced by the Sports Committee — the final match duration, quarter structure, and break timings will be communicated before the tournament.</p>
     <h4>Scoring</h4>
     <ul><li>Basket inside the 3-point arc: 2 points</li><li>Basket outside the 3-point arc: 3 points</li></ul>
     <h4>Overtime</h4>
@@ -567,23 +582,30 @@ const SPORTS = [
     <ul>
       <li>Follows the Official FIBA Rule Book, with the modifications in this handbook</li>
       <li>No time-outs allowed</li>
+      <li>Match duration will be as communicated by the Sports Committee</li>
       <li>Anything not covered here follows applicable FIBA rules; the referee's decision is final</li>
     </ul>
-    <h4>Reporting &amp; registration</h4>
-    <ul><li>Only registered players may participate</li><li>Teams must report before their scheduled match — late teams may be declared a walkover</li>
-    <li>Fixtures will be published by the Sports Committee</li></ul>
-    <h4>Dress &amp; refreshments</h4>
-    <ul><li>Tournament bibs provided by organisers must be worn</li><li>Drinking water and Fast&amp;Up energy drink provided</li></ul>
+    <h4>Registration &amp; reporting</h4>
+    <ul>
+      <li>Only registered players may participate, in their applicable age category</li>
+      <li>Open category players register individually and take part in the player auction</li>
+      <li>Players must report before their scheduled match — late arrival may be declared a walkover</li>
+      <li>Fixtures will be published by the Sports Committee</li>
+    </ul>
+    <h4>Dress requirements</h4>
+    <p>Tournament bibs provided by organisers must be worn during the match.</p>
+    <h4>Refreshments</h4>
+    <p>Drinking water and Fast&amp;Up energy drink provided by the organisers.</p>
     <h4>Awards</h4>
     <ul>
       <li>Team: 🥇 Winner, 🥈 Runner-up</li>
       <li>Individual: MVP, Best Defensive Player, Best Offensive Player, Best Emerging Player, Fair Play Award</li>
-      <li>Participation certificates for all</li>
+      <li>Participation certificates for all participants</li>
     </ul>
-    <h4>Fan shooting contest</h4>
-    <p>A separate contest for spectators — 2-point and 3-point shooting challenges, with prizes for winners.</p>
-    <h4>General</h4>
-    <p>Participants follow the instructions of referees, officials and the Sports Committee. Misconduct or unsporting behaviour may lead to disciplinary action or disqualification. The Committee can modify the schedule; anything not covered here is decided by the Committee. Taking part means accepting these rules.</p>
+    <h4>Fan Shooting Contest</h4>
+    <p>A special contest for spectators — a 2-Point Shooting Contest from the 2-point area, and a 3-Point Shooting Contest from the 3-point area. Winners of both receive prizes.</p>
+    <h4>General instructions</h4>
+    <p>Participants follow the instructions of referees, match officials, volunteers and the Sports Committee. Players are expected to maintain discipline and sportsmanship throughout. Misconduct, abusive language or unsporting behaviour may result in disciplinary action or disqualification. The Sports Committee can modify the fixture schedule if required; anything not covered here is decided by the Committee. Taking part in the tournament means accepting these rules and the decisions of the Sports Committee and Match Officials.</p>
   `
 },
 
