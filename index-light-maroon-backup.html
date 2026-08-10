@@ -1012,6 +1012,17 @@ function navigate(route, param){
 
 window.addEventListener('hashchange', ()=>render());
 
+// If the browser restores this page from its back/forward cache (e.g. the
+// person hits Back, or reopens the tab from history) instead of actually
+// re-fetching it, whatever content was on the site when they first loaded
+// it stays frozen — even if it's since been updated. This forces a real
+// reload the moment that happens, so they always see the current site.
+// Safe to do unconditionally here: it only fires right as a stale page
+// becomes visible again, before there's been any chance to type into it.
+window.addEventListener('pageshow', (e)=>{
+  if(e.persisted) location.reload();
+});
+
 /* =========================================================
    SHELL: TOPBAR + TICKER + FOOTER
    ========================================================= */
@@ -1189,7 +1200,7 @@ async function renderHome(){
   const grid = document.getElementById('homeSportsGrid');
   grid.innerHTML = SPORTS.map(sportCardHtml).join('');
   wireSportCards(grid);
-  document.getElementById('heroStatusBtn').addEventListener('click', openStatusModal);
+  document.getElementById('heroStatusBtn').addEventListener('click', ()=>openStatusModal());
 }
 
 function sportCardHtml(s){
