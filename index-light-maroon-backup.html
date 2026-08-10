@@ -809,15 +809,57 @@ const SPORTS = [
 {
   id:'football', name:'Football', short:'Auction format', icon:'⚽',
   poc:[{name:'Ayush',phone:'8882576247'}],
-  dateLabel:'22–23 Aug · Evening', venue:'Ground Nearby', feeLabel:'₹300 per person — registration opens soon',
-  tagline:'Individual paid registration followed by a player auction to form teams. Registration isn\'t open yet.',
-  registration:{ mode:'contact' },
+  dateLabel:'22–23 Aug · Evening', venue:'Football Ground', feeLabel:'₹300 per person',
+  tagline:'Individual paid registration followed by a player auction to form balanced teams. Register via the separate form linked below.',
+  registration:{
+    mode:'external',
+    externalUrl:'https://docs.google.com/forms/d/e/1FAIpQLScL9gzhuuORsIail2GvLho2TBT9JvhYDyb4PlpRoRcbgFLDZQ/viewform',
+    categories:[{id:'open',label:'16+ Open'}]
+  },
   rulesHtml:`
-    <h4>Format</h4>
-    <p>Football will run as individual paid registrations, followed by a player auction to draft teams — rather than players registering as pre-formed teams.</p>
+    <h4>Event details</h4>
+    <p>Edition 2026 · Tournament Dates: 22–23 August 2026 · Time: Evening · Venue: Football Ground</p>
+    <h4>Competition category</h4>
+    <p>16+ Open — one category, open to all eligible players.</p>
     <h4>Registration fee</h4>
-    <ul><li>₹300 per person, individual registration</li><li>Teams will be formed via an auction after registrations close</li></ul>
-    <p>Registration isn't open yet — full auction process and the exact opening date will be posted on the Updates page. Contact the organisers if you'd like to be notified as soon as it opens.</p>
+    <p>₹300 per person.</p>
+    <h4>Registration</h4>
+    <ul>
+      <li>Players register individually — only registered players are eligible to participate</li>
+      <li>Players are divided into teams through an auction, to create balanced teams and a fair opportunity for everyone</li>
+      <li>Registration for Football happens through a separate form, not on this website — use the "Register" link on this page</li>
+    </ul>
+    <h4>Player auction</h4>
+    <p>Date: 15 August 2026 · Time: TBD · Venue: Clubhouse</p>
+    <p>Players registered for the applicable category take part in the auction for team formation. More auction details to follow.</p>
+    <h4>Tournament format</h4>
+    <ul>
+      <li>Played over 22–23 August 2026, matches in the evening</li>
+      <li>Final fixtures and match schedule will be announced by the Sports Committee</li>
+    </ul>
+    <p>Final tournament format: to be announced, based on the number of registered players/teams.</p>
+    <h4>Match rules</h4>
+    <ul>
+      <li>Follows the applicable standard rules of football, subject to tournament-specific modifications announced by the Sports Committee</li>
+      <li>Players follow the instructions of match officials and referees; the referee's decision during the match is final and binding</li>
+      <li>Players are expected to maintain discipline and sportsmanship throughout the tournament</li>
+    </ul>
+    <h4>Match duration &amp; scoring</h4>
+    <p>To be announced — final match duration, half-time break, substitution rules and other match-specific details will be communicated before the tournament.</p>
+    <h4>Reporting</h4>
+    <ul>
+      <li>Players must report at the venue before their scheduled match</li>
+      <li>Players must be available according to the published fixture schedule</li>
+      <li>Failure to report on time may result in the player/team being declared ineligible for that match, as decided by the Sports Committee</li>
+    </ul>
+    <h4>Awards</h4>
+    <ul><li>🥇 Winner</li><li>🥈 Runner-up</li><li>Participation certificates for all participants</li></ul>
+    <h4>Refreshments</h4>
+    <p>Refreshments will be available during the tournament.</p>
+    <h4>Football team T-shirts</h4>
+    <p>Football team T-shirts will be provided for the tournament.</p>
+    <h4>General instructions</h4>
+    <p>Only registered participants may take part, in their registered category. Teams are formed through the auction. Players follow the instructions of referees, volunteers and the Sports Committee, who may modify the fixture schedule if required. Anything not covered here is decided by the Sports Committee. Taking part in the tournament means accepting these rules and the decisions of the Sports Committee and Match Officials.</p>
   `
 }
 ];
@@ -1190,6 +1232,7 @@ async function renderSportDetail(id){
           ${s.registration.mode==='form' ? `<a href="#register/${s.id}" class="btn btn-primary">Register for ${s.name}</a>` : ''}
           ${s.registration.mode==='onspot' ? `<span class="badge gold">Register on the spot</span>` : ''}
           ${s.registration.mode==='contact' ? `<a href="#contact" class="btn btn-outline">Contact Organisers</a>` : ''}
+          ${s.registration.mode==='external' ? `<a href="${s.registration.externalUrl}" target="_blank" rel="noopener" class="btn btn-primary">Register for ${s.name} ↗</a>` : ''}
         </div>
         ${s.poc && s.poc.length ? `<p style="margin-top:16px;font-family:'JetBrains Mono';font-size:12.5px;color:#EADFC8;">Point${s.poc.length>1?'s':''} of Contact: ${s.poc.map(p=>`<a href="tel:${p.phone}" style="color:var(--gold-light);text-decoration:underline;">${p.name} (${p.phone})</a>`).join(', ')}</p>` : ''}
       </div>
@@ -1509,6 +1552,11 @@ function renderRegDynamic(sportId){
   if(s.registration.mode==='contact'){
     area.innerHTML = `<div class="msg-banner info" style="margin-top:20px;">Registration for ${s.name} isn't open yet — full details are coming soon. Contact the organisers to be notified first.</div>
     <a href="#contact" class="btn btn-outline btn-sm">Go to Contact</a>`;
+    return;
+  }
+  if(s.registration.mode==='external'){
+    area.innerHTML = `<div class="msg-banner info" style="margin-top:20px;">Registration for ${s.name} is handled through a separate form, not on this website.</div>
+    <a href="${s.registration.externalUrl}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Register for ${s.name} ↗</a>`;
     return;
   }
   const cfg = s.registration;
