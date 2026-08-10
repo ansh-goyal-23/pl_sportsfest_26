@@ -1403,11 +1403,12 @@ async function renderUpdatesList(highlightId){
   host.innerHTML = list.map(u=>`
     <div class="card" id="upd-${u.id}" style="margin-bottom:16px;${highlightId===u.id?'border-color:var(--gold);box-shadow:0 0 0 3px rgba(192,138,46,.25);':''}">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <span class="badge ${u.category==='result'?'green':(u.category==='schedule-change'?'maroon':'gold')}">${UPDATE_CAT_LABEL[u.category]||u.category}</span>
+        <span class="badge ${u.category==='result'?'green':(u.category==='schedule-change'?'maroon':'gold')}">${UPDATE_CAT_LABEL[u.category]||u.category}${u.pinned?' 📌':''}</span>
         <span class="mono" style="font-size:11.5px;color:#8a7f6e;">${fmtDate(u.date)}</span>
       </div>
       <h3 style="margin-top:12px;font-size:20px;">${esc(u.title)}</h3>
-      <p style="white-space:pre-wrap;">${esc(u.body)}</p>
+      ${u.image_url ? `<img src="${u.image_url}" style="width:100%;margin-top:12px;border:1px solid var(--line);">` : ''}
+      <p style="white-space:pre-wrap;${u.image_url?'margin-top:12px;':''}">${esc(u.body)}</p>
     </div>`).join('');
   if(highlightId){
     const el = document.getElementById('upd-'+highlightId);
@@ -2583,8 +2584,9 @@ async function adminPhotos(){
         <div class="upload-box" id="phBox"><p class="mono" style="font-size:12px;color:#8a7f6e;">📎 Click to upload a photo</p><input type="file" id="phInput" accept="image/*" style="display:none;"></div>
       </div>
       <div class="field"><label>Caption</label><input type="text" id="phCaption"></div>
+      <div class="field"><label><input type="checkbox" id="phPin" style="width:auto;margin-right:8px;">Pin to top of Updates</label></div>
       <button class="btn btn-primary" id="phAddBtn">Post Photo</button>
-      <p class="hint">Posted photos also appear as a "Photo / Highlight" item on the Updates page.</p>
+      <p class="hint">Posted photos appear on the Updates page with the image shown inline.</p>
     </div>
     <h3 class="h-md" style="margin-bottom:18px;">All Photos</h3>
     <div id="phList" class="grid grid-3"><div class="loading-dots">Loading…</div></div>
@@ -2603,13 +2605,25 @@ async function adminPhotos(){
   document.getElementById('phAddBtn').addEventListener('click', async ()=>{
     if(!phFile){ toast('Upload a photo first', 'err'); return; }
     const caption = document.getElementById('phCaption').value.trim();
+    const pinned = document.getElementById('phPin').checked;
     const path = await uploadImage('event-photos', phFile, 'photo');
     if(!path){ toast('Upload failed — try again', 'err'); return; }
     const url = publicUrl('event-photos', path);
     const date = new Date().toISOString();
-    const {ok} = await tInsert('photos', {url, caption, date});
+    // Share one id between the photos row and its linked update, so the
+    // photo actually shows up on the Updates page (image_url) and so
+    // deleting the photo later can clean up its update too.
+    const sharedId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : null;
+    const photoRow = sharedId ? {id: sharedId, url, caption, date} : {url, caption, date};
+    const {ok} = await tInsert('photos', photoRow);
     if(ok){
-      await tInsert('updates', {title:caption||'New photo posted', body:'A new photo/highlight has been added to the gallery.', category:'photo-highlight', pinned:false, date});
+      const updateRow = {
+        title: caption || 'New photo posted',
+        body: 'A new photo/highlight has been added to the gallery.',
+        category: 'photo-highlight', pinned, date, image_url: url,
+      };
+      if(sharedId) updateRow.id = sharedId;
+      await tInsert('updates', updateRow);
       toast('Photo posted', 'ok');
     }else{ toast('Could not save photo', 'err'); }
     adminPhotos();
@@ -2624,7 +2638,13 @@ async function adminPhotos(){
       <button class="btn-del" style="margin-top:8px;" data-del-pho="${p.id}">Delete</button>
     </div>`).join('');
   host.querySelectorAll('[data-del-pho]').forEach(el=>{
-    el.addEventListener('click', async ()=>{ if(!confirm('Delete this photo?')) return; await tDelete('photos', el.dataset.delPho); toast('Deleted','info'); adminPhotos(); });
+    el.addEventListener('click', async ()=>{
+      if(!confirm('Delete this photo?')) return;
+      await tDelete('photos', el.dataset.delPho);
+      await tDelete('updates', el.dataset.delPho); // same shared id, cleans up the linked update too
+      toast('Deleted','info');
+      adminPhotos();
+    });
   });
 }
 
