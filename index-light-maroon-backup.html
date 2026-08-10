@@ -167,6 +167,19 @@ section{padding:64px 0;}
 .card .tag{font-family:'JetBrains Mono';font-size:10.5px;letter-spacing:.1em;color:var(--maroon);text-transform:uppercase;}
 .card h3{font-size:24px;margin-top:8px;}
 .card p{color:#5a5148;font-size:14.5px;line-height:1.55;margin-top:10px;}
+.update-card{display:flex;gap:16px;align-items:flex-start;}
+.update-thumb{
+  flex:none;width:120px;height:120px;background:var(--cream-dim);
+  border-radius:var(--radius);border:1px solid var(--line);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;transition:.2s;
+}
+.update-thumb:hover{border-color:var(--gold);}
+.update-thumb img{max-width:100%;max-height:100%;object-fit:contain;}
+.update-body{flex:1;min-width:0;}
+@media(max-width:600px){
+  .update-card{flex-direction:column;}
+  .update-thumb{width:100%;height:160px;}
+}
 .sport-card{cursor:pointer;overflow:hidden;padding:0;}
 .card-cover{height:118px;position:relative;overflow:hidden;}
 .card-cover svg{position:absolute;inset:0;width:100%;height:100%;transition:.3s;}
@@ -572,7 +585,7 @@ const SPORTS = [
     categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
     events:[
       {id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, requiredSize:3, feeType:'flatByCategory', feeByCategory:{u10:300,u14:300}, genderRule:'choose'},
-      {id:'individual', label:'Individual Registration (Player Auction)', teamSize:1, feeType:'flat', fee:200, genderRule:'choose'}
+      {id:'individual', label:'Individual Registration (Player Auction)', teamSize:1, feeType:'flat', fee:200, genderRule:'choose', auctionFields:true}
     ],
     eventsByCategory: { 'u10': ['team'], 'u14': ['team'], 'open': ['individual'] }
   },
@@ -1401,15 +1414,22 @@ async function renderUpdatesList(highlightId){
     return;
   }
   host.innerHTML = list.map(u=>`
-    <div class="card" id="upd-${u.id}" style="margin-bottom:16px;${highlightId===u.id?'border-color:var(--gold);box-shadow:0 0 0 3px rgba(192,138,46,.25);':''}">
-      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <span class="badge ${u.category==='result'?'green':(u.category==='schedule-change'?'maroon':'gold')}">${UPDATE_CAT_LABEL[u.category]||u.category}${u.pinned?' 📌':''}</span>
-        <span class="mono" style="font-size:11.5px;color:#8a7f6e;">${fmtDate(u.date)}</span>
+    <div class="card ${u.image_url?'update-card':''}" id="upd-${u.id}" style="margin-bottom:16px;${highlightId===u.id?'border-color:var(--gold);box-shadow:0 0 0 3px rgba(192,138,46,.25);':''}">
+      ${u.image_url ? `<div class="update-thumb" data-full="${u.image_url}"><img src="${u.image_url}"></div>` : ''}
+      <div class="${u.image_url?'update-body':''}">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <span class="badge ${u.category==='result'?'green':(u.category==='schedule-change'?'maroon':'gold')}">${UPDATE_CAT_LABEL[u.category]||u.category}${u.pinned?' 📌':''}</span>
+          <span class="mono" style="font-size:11.5px;color:#8a7f6e;">${fmtDate(u.date)}</span>
+        </div>
+        <h3 style="margin-top:12px;font-size:20px;">${esc(u.title)}</h3>
+        <p style="white-space:pre-wrap;">${esc(u.body)}</p>
       </div>
-      <h3 style="margin-top:12px;font-size:20px;">${esc(u.title)}</h3>
-      ${u.image_url ? `<img src="${u.image_url}" style="width:100%;margin-top:12px;border:1px solid var(--line);">` : ''}
-      <p style="white-space:pre-wrap;${u.image_url?'margin-top:12px;':''}">${esc(u.body)}</p>
     </div>`).join('');
+  host.querySelectorAll('.update-thumb').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      openModal(`<button class="close-x" id="modalClose">✕</button><img src="${el.dataset.full}">`);
+    });
+  });
   if(highlightId){
     const el = document.getElementById('upd-'+highlightId);
     if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
@@ -1506,6 +1526,8 @@ async function renderContact(){
 /* =========================================================
    PAGE: REGISTER
    ========================================================= */
+let REG_AUCTION_PHOTO_FILE = null; // holds the raw File for the basketball auction photo, uploaded at final confirm time
+
 async function renderRegister(preSportId){
   renderShell(`
     <div class="detail-band">
@@ -1573,6 +1595,7 @@ function renderRegDynamic(sportId){
     </div>
     <div id="regGenderWrap"></div>
     <div id="regParticipants"></div>
+    <div id="regAuctionWrap"></div>
     <div class="form-grid-2">
       <div class="field"><label>Contact Phone Number *</label><input type="tel" id="regPhone" placeholder="10-digit mobile number" required maxlength="10"></div>
       <div class="field"><label>Flat Number *</label><input type="text" id="regFlat" placeholder="e.g. B-1204" required></div>
@@ -1665,6 +1688,82 @@ async function updateRegForm(sportId){
       </div>`;
   }
   pWrap.innerHTML = fields;
+
+  const auctionWrap = document.getElementById('regAuctionWrap');
+  if(ev.auctionFields){
+    auctionWrap.innerHTML = `
+      <div class="field-group" style="border:1px solid var(--line);padding:14px;margin-bottom:14px;background:var(--cream-dim);">
+        <label style="margin-bottom:12px;">🏀 Player Auction Details</label>
+        <p class="hint" style="margin-top:-6px;margin-bottom:14px;">This helps the Sports Committee run the auction and build balanced teams. Your name, age and gender above are reused — no need to repeat them.</p>
+        <div class="field">
+          <label>Photo Upload *</label>
+          <div class="upload-box" id="auctionPhotoBox"><p class="mono" style="font-size:12.5px;color:#8a7f6e;">📎 Click to upload a recent photo of yourself</p><input type="file" id="auctionPhotoInput" accept="image/*" style="display:none;"></div>
+        </div>
+        <div class="field">
+          <label>Preferred Position of Play *</label>
+          <select id="auctionPosition" required>
+            <option value="">— Select a position —</option>
+            <option value="Point Guard">Point Guard</option>
+            <option value="Shooting Guard">Shooting Guard</option>
+            <option value="Small Forward">Small Forward</option>
+            <option value="Power Forward">Power Forward</option>
+            <option value="Centre">Centre</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="field" id="auctionPositionOtherWrap" style="display:none;">
+          <label>Please specify *</label>
+          <input type="text" id="auctionPositionOther" placeholder="Your preferred position">
+        </div>
+        <div class="field">
+          <label>Playing Style *</label>
+          <textarea id="auctionStyle" rows="2" placeholder="e.g. Scorer / Defender / Playmaker / Rebounder / All-rounder" required></textarea>
+        </div>
+        <div class="field">
+          <label>Special Talents *</label>
+          <textarea id="auctionTalents" rows="2" placeholder="What are your special strengths or skills as a basketball player?" required></textarea>
+        </div>
+        <div class="field">
+          <label>Willing to Participate in the Auction? *</label>
+          <select id="auctionWilling" required>
+            <option value="">— Select —</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+          <p class="hint">Answering "No" won't block your registration — the Sports Committee will follow up with you directly to sort out team placement.</p>
+        </div>
+        <div class="field">
+          <label>Preferred Player(s) You'd Like to Play With *</label>
+          <input type="text" id="auctionPreferred" placeholder="Names, or write &quot;None&quot; if no preference" required>
+        </div>
+        <div class="field">
+          <label>Anything Else</label>
+          <textarea id="auctionAnythingElse" rows="2" placeholder="Anything else you'd like the Sports Committee to know? (optional)"></textarea>
+        </div>
+      </div>`;
+    const abox = document.getElementById('auctionPhotoBox');
+    const ainput = document.getElementById('auctionPhotoInput');
+    abox.addEventListener('click', ()=>ainput.click());
+    ainput.addEventListener('change', async ()=>{
+      const f = ainput.files[0]; if(!f) return;
+      abox.innerHTML = `<p class="mono" style="font-size:12px;">Reading photo…</p>`;
+      try{
+        const {dataUrl} = await compressImageToBlob(f, 900, 0.7);
+        REG_AUCTION_PHOTO_FILE = f;
+        abox.classList.add('has-img');
+        abox.innerHTML = `<img src="${dataUrl}" style="max-height:160px;margin:0 auto;"><p class="mono" style="font-size:11px;color:var(--green);margin-top:8px;">✓ Photo attached — click to replace</p>`;
+        abox.addEventListener('click', ()=>ainput.click());
+      }catch(e){
+        abox.innerHTML = `<p class="mono" style="font-size:12px;color:#B0463C;">Couldn't read that image, please try again.</p>`;
+      }
+    });
+    document.getElementById('auctionPosition').addEventListener('change', e=>{
+      document.getElementById('auctionPositionOtherWrap').style.display = e.target.value==='Other' ? 'block' : 'none';
+    });
+  }else{
+    auctionWrap.innerHTML = '';
+    REG_AUCTION_PHOTO_FILE = null;
+  }
 
   const payArea = document.getElementById('regPaymentArea');
   if(isFree){
@@ -1770,6 +1869,33 @@ async function submitRegistration(sportId){
     }
   }
 
+  // Player auction fields (Basketball Open individual registration only)
+  let auctionInfo = null;
+  if(ev.auctionFields){
+    if(!REG_AUCTION_PHOTO_FILE){ msgArea.innerHTML = `<div class="msg-banner err">Please upload a recent photo of yourself.</div>`; return; }
+    const position = document.getElementById('auctionPosition').value;
+    const positionOther = document.getElementById('auctionPositionOther')?.value.trim() || '';
+    const style = document.getElementById('auctionStyle').value.trim();
+    const talents = document.getElementById('auctionTalents').value.trim();
+    const willing = document.getElementById('auctionWilling').value;
+    const preferred = document.getElementById('auctionPreferred').value.trim();
+    const anythingElse = document.getElementById('auctionAnythingElse').value.trim();
+    if(!position){ msgArea.innerHTML = `<div class="msg-banner err">Please select your preferred position of play.</div>`; return; }
+    if(position==='Other' && !positionOther){ msgArea.innerHTML = `<div class="msg-banner err">Please specify your preferred position.</div>`; return; }
+    if(!style){ msgArea.innerHTML = `<div class="msg-banner err">Please describe your playing style.</div>`; return; }
+    if(!talents){ msgArea.innerHTML = `<div class="msg-banner err">Please share your special talents as a player.</div>`; return; }
+    if(!willing){ msgArea.innerHTML = `<div class="msg-banner err">Please let us know if you're willing to participate in the auction.</div>`; return; }
+    if(!preferred){ msgArea.innerHTML = `<div class="msg-banner err">Please fill in preferred player(s), or write "None" if you have no preference.</div>`; return; }
+    auctionInfo = {
+      position: position==='Other' ? positionOther : position,
+      playing_style: style,
+      special_talents: talents,
+      auction_willing: willing,
+      preferred_players: preferred,
+      anything_else: anythingElse || null,
+    };
+  }
+
   // Duplicate check — same phone, same sport/category/event, still pending
   // or already approved. A prior rejection doesn't block a fresh attempt.
   const submitBtnForDupCheck = document.getElementById('regSubmitBtn');
@@ -1794,6 +1920,8 @@ async function submitRegistration(sportId){
     team_name: teamNameEl ? teamNameEl.value.trim() : null,
     participants, phone, flat,
     fee: feeAmount,
+    auction_info: auctionInfo,
+    player_photo_path: null,
     visitor_id: getVisitorId(), // analytics only — never read or checked by any validation
   };
 
@@ -1897,7 +2025,16 @@ function openPaymentModal(s, feeAmount, baseRow, msgArea){
       modalMsg.innerHTML = `<div class="msg-banner err">Couldn't upload your screenshot — please check your connection and try again.</div>`;
       return;
     }
-    const row = {...baseRow, screenshot_path: screenshotPath, status:'pending', player_id: null};
+    let playerPhotoPath = null;
+    if(baseRow.auction_info){
+      playerPhotoPath = await uploadImage('player-photos', REG_AUCTION_PHOTO_FILE, baseRow.sport_id);
+      if(!playerPhotoPath){
+        confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Submit Registration';
+        modalMsg.innerHTML = `<div class="msg-banner err">Couldn't upload your player photo — please check your connection and try again.</div>`;
+        return;
+      }
+    }
+    const row = {...baseRow, screenshot_path: screenshotPath, player_photo_path: playerPhotoPath, status:'pending', player_id: null};
     const ok = await finalizeRegistration(row, msgArea, false);
     if(ok){
       saved = true;
@@ -2064,10 +2201,15 @@ async function exportRegistrationsExcel(){
     // Signed URLs (7-day expiry) for every paid registration's screenshot —
     // the bucket is private, so there's no permanent public link to use.
     const withScreenshot = all.filter(r=>r.screenshot_path);
-    if(withScreenshot.length && btn) btn.textContent = `Preparing (${withScreenshot.length} screenshot links)…`;
+    const withPlayerPhoto = all.filter(r=>r.player_photo_path);
+    if((withScreenshot.length || withPlayerPhoto.length) && btn) btn.textContent = `Preparing (${withScreenshot.length + withPlayerPhoto.length} links)…`;
     const screenshotUrls = {};
     await Promise.all(withScreenshot.map(async r=>{
       screenshotUrls[r.id] = await signedUrl('payment-screenshots', r.screenshot_path, 604800); // 7 days
+    }));
+    const playerPhotoUrls = {};
+    await Promise.all(withPlayerPhoto.map(async r=>{
+      playerPhotoUrls[r.id] = await signedUrl('player-photos', r.player_photo_path, 604800); // 7 days
     }));
 
     const regRows = all.map(r=>({
@@ -2085,6 +2227,13 @@ async function exportRegistrationsExcel(){
       'Participant Count': (r.participants||[]).length,
       'Participants': (r.participants||[]).map(p=>`${p.name} (${p.age}, ${p.gender})`).join('; '),
       'Payment Screenshot Link': r.screenshot_path ? (screenshotUrls[r.id] || 'Link unavailable') : 'N/A (free entry)',
+      'Auction: Position': r.auction_info?.position || '',
+      'Auction: Playing Style': r.auction_info?.playing_style || '',
+      'Auction: Special Talents': r.auction_info?.special_talents || '',
+      'Auction: Willing': r.auction_info?.auction_willing || '',
+      'Auction: Preferred Player(s)': r.auction_info?.preferred_players || '',
+      'Auction: Anything Else': r.auction_info?.anything_else || '',
+      'Player Photo Link': r.player_photo_path ? (playerPhotoUrls[r.id] || 'Link unavailable') : '',
     }));
 
     const partRows = [];
@@ -2232,6 +2381,15 @@ async function adminRegistrations(){
         <span class="badge ${r.status==='approved'?'green':(r.status==='rejected'?'maroon':'gold')}">${r.status}</span>
       </div>
       ${r.screenshot_path ? `<div style="margin-top:10px;"><span class="thumb-link" data-view-shot="${r.id}">📎 View payment screenshot</span></div>` : ''}
+      ${r.player_photo_path ? `<div style="margin-top:6px;"><span class="thumb-link" data-view-player-photo="${r.id}">🏀 View player photo</span></div>` : ''}
+      ${r.auction_info ? `<div style="margin-top:10px;font-size:12.5px;color:#5a5148;background:var(--cream-dim);padding:10px 12px;border-left:3px solid var(--gold);">
+        <strong style="color:var(--ink);">Position:</strong> ${esc(r.auction_info.position)}<br>
+        <strong style="color:var(--ink);">Playing style:</strong> ${esc(r.auction_info.playing_style)}<br>
+        <strong style="color:var(--ink);">Special talents:</strong> ${esc(r.auction_info.special_talents)}<br>
+        <strong style="color:var(--ink);">Auction willing:</strong> ${esc(r.auction_info.auction_willing)}<br>
+        <strong style="color:var(--ink);">Preferred player(s):</strong> ${esc(r.auction_info.preferred_players)}
+        ${r.auction_info.anything_else ? `<br><strong style="color:var(--ink);">Anything else:</strong> ${esc(r.auction_info.anything_else)}` : ''}
+      </div>` : ''}
       ${r.player_id ? `<div style="margin-top:10px;"><span class="player-id-tag">${r.player_id}</span></div>` : ''}
       <div class="ractions">
         ${r.status==='pending' ? `<button class="btn-approve" data-approve="${r.id}">Approve & Issue Player ID</button><button class="btn-reject" data-reject="${r.id}">Reject</button>` : ''}
@@ -2250,6 +2408,13 @@ async function adminRegistrations(){
       const r = list.find(x=>x.id===el.dataset.viewShot);
       const url = await signedUrl('payment-screenshots', r.screenshot_path, 600);
       openModal(`<button class="close-x" id="modalClose">✕</button><h3 style="font-size:18px;">Payment Screenshot</h3>${url?`<img src="${url}">`:`<p>Couldn't load screenshot.</p>`}`);
+    });
+  });
+  host.querySelectorAll('[data-view-player-photo]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const r = list.find(x=>x.id===el.dataset.viewPlayerPhoto);
+      const url = await signedUrl('player-photos', r.player_photo_path, 600);
+      openModal(`<button class="close-x" id="modalClose">✕</button><h3 style="font-size:18px;">Player Photo</h3>${url?`<img src="${url}">`:`<p>Couldn't load photo.</p>`}`);
     });
   });
   host.querySelectorAll('[data-approve]').forEach(el=>{
