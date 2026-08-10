@@ -758,16 +758,16 @@ const SPORTS = [
 {
   id:'chess', name:'Chess', short:'Individual', icon:'♟️',
   poc:[{name:'Rahul',phone:'9313309503'}],
-  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'U10 ₹100 · Open ₹200',
-  tagline:'Individual chess competition in Under 10 and Open categories.',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'U10 ₹100 · Open ₹200 · Free for 60+',
+  tagline:'Individual chess competition in Under 10, Open and 60+ categories.',
   registration:{
     mode:'form',
-    categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'}],
+    categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
     events:[{id:'chess', label:'Chess', teamSize:1, genderRule:'any'}]
   },
   rulesHtml:`
-    <h4>Categories</h4><p>Under 10 and Open.</p>
-    <h4>Registration fee</h4><p>Under 10: ₹100 per person. Open: ₹200 per person. Individual registration.</p>
+    <h4>Categories</h4><p>Under 10, Open, and 60+.</p>
+    <h4>Registration fee</h4><p>Under 10: ₹100 per person. Open: ₹200 per person. 60+ category: Free. Individual registration.</p>
     <h4>Format &amp; duration</h4><p>Standard Chess rules apply. Tournament format and time control will be decided by the Sports Committee based on registrations and announced before the competition.</p>
     <h4>Reporting</h4><p>Participants report before their scheduled match; late arrival may mean a walkover.</p>
     <h4>Awards</h4><p>🥇 Winner, 🥈 Runner-up per category, plus participation certificates for all.</p>
@@ -778,19 +778,19 @@ const SPORTS = [
 {
   id:'carrom', name:'Carrom', short:'Singles & Doubles', icon:'⚪',
   poc:[{name:'Rahul',phone:'9313309503'}],
-  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'U10 ₹100 singles, ₹200 doubles · Open ₹200 singles, ₹400 doubles',
-  tagline:'Singles and doubles carrom in Under 10 and Open categories.',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'U10 ₹100 singles, ₹200 doubles · Open ₹200 singles, ₹400 doubles · Free for 60+',
+  tagline:'Singles and doubles carrom in Under 10, Open and 60+ categories.',
   registration:{
     mode:'form',
-    categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'}],
+    categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
     events:[
       {id:'singles', label:'Singles', teamSize:1, genderRule:'any'},
       {id:'doubles', label:'Doubles', teamSize:2, genderRule:'any'}
     ]
   },
   rulesHtml:`
-    <h4>Categories &amp; events</h4><p>Under 10 and Open — Singles (individual) and Doubles (2 players per team).</p>
-    <h4>Registration fees</h4><ul><li>Under 10: ₹100 per person singles, ₹200 per team doubles</li><li>Open: ₹200 per person singles, ₹400 per team doubles</li></ul>
+    <h4>Categories &amp; events</h4><p>Under 10, Open, and 60+ — Singles (individual) and Doubles (2 players per team), available in every category.</p>
+    <h4>Registration fees</h4><ul><li>Under 10: ₹100 per person singles, ₹200 per team doubles</li><li>Open: ₹200 per person singles, ₹400 per team doubles</li><li>60+ category: Free</li></ul>
     <h4>Format &amp; duration</h4><p>Standard Carrom rules apply. Format, scoring, boards/rounds and duration finalised by the Sports Committee and announced before the competition.</p>
     <h4>Reporting</h4><p>Players/teams report before their scheduled match; late arrival may mean a walkover.</p>
     <h4>Awards</h4><p>🥇 Winner, 🥈 Runner-up per event/category, plus participation certificates for all.</p>
@@ -1782,7 +1782,17 @@ async function renderPaymentQR(amount, sportName, hostId){
     host.innerHTML = `<p class="mono" style="font-size:12px;color:#B0463C;">Payment QR isn't configured yet. Please contact the organisers directly to pay for now.</p>`;
     return;
   }
-  const upiUrl = `upi://pay?pa=${encodeURIComponent(settings.upiId)}&pn=${encodeURIComponent('Prateek Laurel Sports Fest')}&am=${amount}&cu=INR&tn=${encodeURIComponent(sportName+' registration')}`;
+  // Some banks strictly expect the amount with two decimal places and can
+  // mishandle a bare integer. The transaction note is stripped down to
+  // plain letters/numbers/spaces — symbols like the "+" in "3+1 Basketball"
+  // are technically valid once percent-encoded, but not every bank's UPI
+  // parser handles them reliably. A short transaction reference is also
+  // included, since some stricter bank-side validators expect one on a
+  // collect request that specifies an amount.
+  const cleanAmount = Number(amount).toFixed(2);
+  const cleanNote = (sportName + ' registration').replace(/[^a-zA-Z0-9 ]/g, '').trim();
+  const txnRef = 'PL26' + Date.now().toString(36).toUpperCase();
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(settings.upiId)}&pn=${encodeURIComponent('Prateek Laurel Sports Fest')}&am=${cleanAmount}&cu=INR&tn=${encodeURIComponent(cleanNote)}&tr=${encodeURIComponent(txnRef)}`;
   host.innerHTML = `<canvas id="qrCanvas-${hostId||'qrHost'}"></canvas><p class="mono" style="font-size:12px;margin-top:10px;">${esc(settings.upiId)}</p><p class="mono" style="font-size:15px;font-weight:700;color:var(--maroon);">₹${amount}</p>`;
   try{
     new QRious({element: document.getElementById(`qrCanvas-${hostId||'qrHost'}`), value: upiUrl, size:200, foreground:'#201A17', background:'#FFFDF9'});
