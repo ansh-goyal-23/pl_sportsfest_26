@@ -108,7 +108,7 @@ nav.mainnav a.nav-cta.active{color:var(--ink);background:var(--gold);}
   padding:8px 14px;display:flex;align-items:center;gap:6px;
 }
 .ticker-track{flex:1;overflow:hidden;position:relative;white-space:nowrap;display:flex;align-items:center;}
-.ticker-move{display:inline-flex;padding-left:100%;animation:tickmove 32s linear infinite;}
+.ticker-move{display:inline-flex;padding-left:100%;animation:tickmove 64s linear infinite;}
 .ticker-move:hover{animation-play-state:paused;}
 @keyframes tickmove{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .ticker-item{
@@ -1150,6 +1150,17 @@ async function renderTicker(){
   host.querySelectorAll('.ticker-item').forEach(el=>{
     el.addEventListener('click', ()=> navigate('updates', el.dataset.id));
   });
+  // The CSS animation moves a fixed *percentage* of the track's own width
+  // in a fixed *time* — so as more updates get added and the track gets
+  // longer, the same duration covers more distance, making it look faster.
+  // Setting the duration from the actual rendered width instead keeps the
+  // scroll speed (pixels/second) constant no matter how much content there is.
+  const moveEl = host.querySelector('.ticker-move');
+  if(moveEl){
+    const PIXELS_PER_SECOND = 60;
+    const duration = moveEl.scrollWidth / PIXELS_PER_SECOND;
+    moveEl.style.animationDuration = duration + 's';
+  }
 }
 </script>
 <script>
