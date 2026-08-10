@@ -98,7 +98,7 @@ nav.mainnav a.active{color:var(--gold-light);border-bottom-color:var(--gold);}
   padding:8px 14px;display:flex;align-items:center;gap:6px;
 }
 .ticker-track{flex:1;overflow:hidden;position:relative;white-space:nowrap;display:flex;align-items:center;}
-.ticker-move{display:inline-flex;padding-left:100%;animation:tickmove 32s linear infinite;}
+.ticker-move{display:inline-flex;padding-left:100%;animation:tickmove 64s linear infinite;}
 .ticker-move:hover{animation-play-state:paused;}
 @keyframes tickmove{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .ticker-item{
@@ -1127,6 +1127,17 @@ async function renderTicker(){
   host.querySelectorAll('.ticker-item').forEach(el=>{
     el.addEventListener('click', ()=> navigate('updates', el.dataset.id));
   });
+  // The CSS animation moves a fixed *percentage* of the track's own width
+  // in a fixed *time* — so as more updates get added and the track gets
+  // longer, the same duration covers more distance, making it look faster.
+  // Setting the duration from the actual rendered width instead keeps the
+  // scroll speed (pixels/second) constant no matter how much content there is.
+  const moveEl = host.querySelector('.ticker-move');
+  if(moveEl){
+    const PIXELS_PER_SECOND = 60;
+    const duration = moveEl.scrollWidth / PIXELS_PER_SECOND;
+    moveEl.style.animationDuration = duration + 's';
+  }
 }
 </script>
 <script>
@@ -1504,6 +1515,15 @@ async function renderContact(){
       </div>
     </div>
     <section class="wrap">
+      <div class="card" style="margin-bottom:30px;">
+        <div class="tag">Technical Support</div>
+        <h3 style="font-size:20px;">Trouble with the website or registration?</h3>
+        <p style="margin-top:10px;">For site glitches, payment/upload issues, or anything not working as expected, contact:</p>
+        <p style="margin-top:12px;">
+          <a href="tel:${TECH_CONTACT.phone}" class="mono" style="color:var(--maroon);font-size:16px;display:block;">${TECH_CONTACT.name} — 📞 ${TECH_CONTACT.phone}</a>
+          <a href="https://wa.me/91${TECH_CONTACT.phone}" target="_blank" class="mono" style="color:var(--green);font-size:13px;display:block;margin-top:8px;">💬 WhatsApp</a>
+        </p>
+      </div>
       <div class="grid grid-3">
         ${CONTACTS.map(c=>`
           <div class="card">
@@ -1519,15 +1539,6 @@ async function renderContact(){
         <div class="tag">Venue</div>
         <h3 style="font-size:20px;">Prateek Laurel Apartments</h3>
         <p>All events are held within the society premises — courts, the Clubhouse, Central Park, and the Back Gate route. Exact venues are listed on each sport's page.</p>
-      </div>
-      <div class="card" style="margin-top:20px;">
-        <div class="tag">Technical Support</div>
-        <h3 style="font-size:20px;">Trouble with the website or registration?</h3>
-        <p style="margin-top:10px;">For site glitches, payment/upload issues, or anything not working as expected, contact:</p>
-        <p style="margin-top:12px;">
-          <a href="tel:${TECH_CONTACT.phone}" class="mono" style="color:var(--maroon);font-size:16px;display:block;">${TECH_CONTACT.name} — 📞 ${TECH_CONTACT.phone}</a>
-          <a href="https://wa.me/91${TECH_CONTACT.phone}" target="_blank" class="mono" style="color:var(--green);font-size:13px;display:block;margin-top:8px;">💬 WhatsApp</a>
-        </p>
       </div>
     </section>
   `);

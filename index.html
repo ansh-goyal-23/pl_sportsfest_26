@@ -1538,6 +1538,15 @@ async function renderContact(){
       </div>
     </div>
     <section class="wrap">
+      <div class="card" style="margin-bottom:30px;">
+        <div class="tag">Technical Support</div>
+        <h3 style="font-size:20px;">Trouble with the website or registration?</h3>
+        <p style="margin-top:10px;">For site glitches, payment/upload issues, or anything not working as expected, contact:</p>
+        <p style="margin-top:12px;">
+          <a href="tel:${TECH_CONTACT.phone}" class="mono" style="color:var(--maroon);font-size:16px;display:block;">${TECH_CONTACT.name} — 📞 ${TECH_CONTACT.phone}</a>
+          <a href="https://wa.me/91${TECH_CONTACT.phone}" target="_blank" class="mono" style="color:var(--green);font-size:13px;display:block;margin-top:8px;">💬 WhatsApp</a>
+        </p>
+      </div>
       <div class="grid grid-3">
         ${CONTACTS.map(c=>`
           <div class="card">
@@ -1553,15 +1562,6 @@ async function renderContact(){
         <div class="tag">Venue</div>
         <h3 style="font-size:20px;">Prateek Laurel Apartments</h3>
         <p>All events are held within the society premises — courts, the Clubhouse, Central Park, and the Back Gate route. Exact venues are listed on each sport's page.</p>
-      </div>
-      <div class="card" style="margin-top:20px;">
-        <div class="tag">Technical Support</div>
-        <h3 style="font-size:20px;">Trouble with the website or registration?</h3>
-        <p style="margin-top:10px;">For site glitches, payment/upload issues, or anything not working as expected, contact:</p>
-        <p style="margin-top:12px;">
-          <a href="tel:${TECH_CONTACT.phone}" class="mono" style="color:var(--maroon);font-size:16px;display:block;">${TECH_CONTACT.name} — 📞 ${TECH_CONTACT.phone}</a>
-          <a href="https://wa.me/91${TECH_CONTACT.phone}" target="_blank" class="mono" style="color:var(--green);font-size:13px;display:block;margin-top:8px;">💬 WhatsApp</a>
-        </p>
       </div>
     </section>
   `);
