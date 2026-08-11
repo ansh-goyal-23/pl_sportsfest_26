@@ -370,14 +370,17 @@ async function tDelete(table, id){
 }
 
 /* ---------- Settings (UPI id) ---------- */
-const DEFAULT_SETTINGS = { upiId:'' };
+const DEFAULT_SETTINGS = { upiId:'', paymentQrPath:null };
 async function getSettings(){
   const {data, error} = await sb.from('settings').select('*').eq('id','main').single();
   if(error || !data) return DEFAULT_SETTINGS;
-  return { upiId: data.upi_id || '' };
+  return { upiId: data.upi_id || '', paymentQrPath: data.payment_qr_path || null };
 }
 async function saveSettings(patch){
-  const {error} = await sb.from('settings').update({upi_id: patch.upiId, updated_at: new Date().toISOString()}).eq('id','main');
+  const update = {updated_at: new Date().toISOString()};
+  if(patch.upiId !== undefined) update.upi_id = patch.upiId;
+  if(patch.paymentQrPath !== undefined) update.payment_qr_path = patch.paymentQrPath;
+  const {error} = await sb.from('settings').update(update).eq('id','main');
   if(error) console.error(error);
   return getSettings();
 }
@@ -1806,13 +1809,32 @@ async function renderPaymentQR(amount, sportName, hostId){
     host.innerHTML = `<p class="mono" style="font-size:12px;color:#B0463C;">Payment QR isn't configured yet. Please contact the organisers directly to pay for now.</p>`;
     return;
   }
-  // Some banks strictly expect the amount with two decimal places and can
-  // mishandle a bare integer. The transaction note is stripped down to
-  // plain letters/numbers/spaces — symbols like the "+" in "3+1 Basketball"
-  // are technically valid once percent-encoded, but not every bank's UPI
-  // parser handles them reliably. A short transaction reference is also
-  // included, since some stricter bank-side validators expect one on a
-  // collect request that specifies an amount.
+
+  // Prefer the organisers' own bank-issued QR image, when one's been
+  // uploaded in Settings. It only encodes the UPI ID — no amount, no
+  // note — so it can't hit the same cross-bank compatibility issues a
+  // generated collect-request QR sometimes runs into. The trade-off is
+  // the amount isn't pre-filled, so it's shown in large text right next
+  // to the QR with an explicit instruction to enter it manually.
+  if(settings.paymentQrPath){
+    const qrUrl = publicUrl('payment-qr', settings.paymentQrPath);
+    host.innerHTML = `
+      <img src="${qrUrl}" style="max-width:220px;border:1px solid var(--line);">
+      <p class="mono" style="font-size:12px;margin-top:10px;">${esc(settings.upiId)}</p>
+      <p class="mono" style="font-size:20px;font-weight:700;color:var(--maroon);margin-top:4px;">₹${amount}</p>
+      <p class="mono" style="font-size:11.5px;color:#8a7f6e;margin-top:6px;max-width:240px;">⚠️ This QR doesn't include the amount — after scanning, type <strong>₹${amount}</strong> yourself before paying.</p>
+    `;
+    return;
+  }
+
+  // Fallback: generate a QR (used automatically until a static QR image
+  // is uploaded in Settings). Some banks strictly expect the amount with
+  // two decimal places and can mishandle a bare integer. The transaction
+  // note is stripped down to plain letters/numbers/spaces — symbols like
+  // the "+" in "3+1 Basketball" are technically valid once percent-encoded,
+  // but not every bank's UPI parser handles them reliably. A short
+  // transaction reference is also included, since some stricter bank-side
+  // validators expect one on a collect request that specifies an amount.
   const cleanAmount = Number(amount).toFixed(2);
   const cleanNote = (sportName + ' registration').replace(/[^a-zA-Z0-9 ]/g, '').trim();
   const txnRef = 'PL26' + Date.now().toString(36).toUpperCase();
@@ -2924,8 +2946,19 @@ async function adminSettings(){
     <h3 class="h-md" style="margin-bottom:18px;">Payment Settings</h3>
     <div class="form-card" style="max-width:520px;padding:22px;margin-bottom:36px;">
       <div class="field"><label>UPI ID for receiving payments</label><input type="text" id="setUpi" value="${esc(s.upiId)}" placeholder="yourname@bank"></div>
-      <p class="hint" style="margin-top:-10px;margin-bottom:18px;">This generates the live QR code shown on registration forms. No payment gateway is involved — participants pay you directly via UPI and upload a screenshot for you to verify.</p>
-      <button class="btn btn-primary" id="setSaveBtn">Save Settings</button>
+      <p class="hint" style="margin-top:-10px;margin-bottom:18px;">Shown as text below the QR on every registration form.</p>
+      <div class="field">
+        <label>Payment QR Image</label>
+        <div class="upload-box" id="setQrBox">
+          ${s.paymentQrPath
+            ? `<img src="${publicUrl('payment-qr', s.paymentQrPath)}" style="max-height:180px;margin:0 auto;">`
+            : `<p class="mono" style="font-size:12px;color:#8a7f6e;">📎 Click to upload your bank's QR code image</p>`}
+          <input type="file" id="setQrInput" accept="image/*" style="display:none;">
+        </div>
+        <p class="hint">Upload the actual QR image from your bank (e.g. a photo of your printed SBI/UPI QR). This is shown as-is on registration forms instead of a generated code — it only encodes your UPI ID, not the amount, so participants will need to type the amount in themselves after scanning. If no image is uploaded here, the site falls back to generating a QR automatically.</p>
+        ${s.paymentQrPath ? `<button class="btn-del" id="setQrRemoveBtn" style="margin-top:8px;">Remove QR Image</button>` : ''}
+      </div>
+      <button class="btn btn-primary" id="setSaveBtn" style="margin-top:10px;">Save Settings</button>
       <div id="setMsg"></div>
     </div>
     <h3 class="h-md" style="margin-bottom:18px;">Organiser Accounts</h3>
@@ -2933,8 +2966,36 @@ async function adminSettings(){
       <p style="font-size:14px;line-height:1.6;">Organiser logins (Rahul, Tarun, Kapil, or anyone else on the committee) are managed in the Supabase dashboard, not here — <strong>Authentication → Users → Add user</strong>. This keeps a determined visitor from ever reaching the admin console, since there's no in-app sign-up.</p>
     </div>
   `;
+  let qrFile = null;
+  const qrBox = document.getElementById('setQrBox');
+  const qrInput = document.getElementById('setQrInput');
+  qrBox.addEventListener('click', ()=>qrInput.click());
+  qrInput.addEventListener('change', async ()=>{
+    const f = qrInput.files[0]; if(!f) return;
+    const {dataUrl} = await compressImageToBlob(f, 700, 0.75);
+    qrFile = f;
+    qrBox.innerHTML = `<img src="${dataUrl}" style="max-height:180px;margin:0 auto;">`;
+    qrBox.addEventListener('click', ()=>qrInput.click());
+  });
+  document.getElementById('setQrRemoveBtn')?.addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    if(!confirm('Remove the QR image? The site will fall back to generating one automatically.')) return;
+    if(s.paymentQrPath) await sb.storage.from('payment-qr').remove([s.paymentQrPath]);
+    await saveSettings({paymentQrPath: null});
+    toast('QR image removed', 'info');
+    adminSettings();
+  });
   document.getElementById('setSaveBtn').addEventListener('click', async ()=>{
-    await saveSettings({upiId:document.getElementById('setUpi').value.trim()});
+    const btn = document.getElementById('setSaveBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    let paymentQrPath = s.paymentQrPath;
+    if(qrFile){
+      const path = await uploadImage('payment-qr', qrFile, 'qr', {path:'main-qr.jpg', upsert:true});
+      if(path) paymentQrPath = path;
+      else { toast('QR image upload failed — try again', 'err'); btn.disabled=false; btn.textContent='Save Settings'; return; }
+    }
+    await saveSettings({upiId:document.getElementById('setUpi').value.trim(), paymentQrPath});
+    btn.disabled = false; btn.textContent = 'Save Settings';
     document.getElementById('setMsg').innerHTML = `<div class="msg-banner ok" style="margin-top:14px;">Settings saved.</div>`;
     toast('Settings saved', 'ok');
   });
