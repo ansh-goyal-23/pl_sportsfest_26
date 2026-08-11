@@ -426,7 +426,18 @@ function compressImageToBlob(file, maxW=900, quality=0.62){
 async function uploadImage(bucket, file, prefix, opts){
   const {blob} = await compressImageToBlob(file, bucket==='payment-screenshots'?1100:900, bucket==='payment-screenshots'?0.7:0.65);
   const path = (opts && opts.path) ? opts.path : `${prefix||'img'}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
-  const {error} = await sb.storage.from(bucket).upload(path, blob, {contentType:'image/jpeg', upsert: !!(opts && opts.upsert)});
+  // Replacing a fixed path (fixture boards, the payment QR) used to rely on
+  // the client library's upsert:true option, but that started failing with
+  // a 400 even though the RLS policies and bucket are correct — most likely
+  // a regression in whatever @supabase/supabase-js@2 patch version the CDN
+  // is now serving, since the version isn't pinned. Deleting first and then
+  // doing a plain upload sidesteps the upsert flag entirely, so it isn't
+  // exposed to that bug. The delete is expected to fail harmlessly the
+  // first time a path is ever used (nothing there yet to delete).
+  if(opts && opts.upsert){
+    await sb.storage.from(bucket).remove([path]).catch(()=>{});
+  }
+  const {error} = await sb.storage.from(bucket).upload(path, blob, {contentType:'image/jpeg'});
   if(error){ console.error('upload failed', error); return null; }
   return path;
 }
