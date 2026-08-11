@@ -699,11 +699,11 @@ const SPORTS = [
   id:'badminton', name:'Badminton', short:'Singles & Doubles', icon:'🏸',
   poc:[{name:'Rahul',phone:'9313309503'},{name:'Kapil',phone:'9910763366'}],
   fixtureGenders:['male','female','mixed'],
-  dateLabel:'22–24 Aug', venue:"Society's Badminton Court", feeLabel:'7–10/U14 ₹100 singles, ₹200 doubles · Open ₹200 singles, ₹400 doubles · Free for 60+',
-  tagline:"Men's & Women's Singles, Men's, Women's & Mixed Doubles across four age categories.",
+  dateLabel:'22–24 Aug', venue:"Society's Badminton Court", feeLabel:'7–10/U14 ₹100 singles, ₹200 doubles · Open/40–59 ₹200 singles, ₹400 doubles · Free for 60+',
+  tagline:"Men's & Women's Singles, Men's, Women's & Mixed Doubles across five age categories.",
   registration:{
     mode:'form',
-    categories:[{id:'7-10',label:'Age 7–10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
+    categories:[{id:'7-10',label:'Age 7–10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'},{id:'40-59',label:'40–59'},{id:'60+',label:'60+'}],
     events:[
       {id:'ms', label:"Men's Singles", teamSize:1, genderRule:'male'},
       {id:'ws', label:"Women's Singles", teamSize:1, genderRule:'female'},
@@ -713,9 +713,9 @@ const SPORTS = [
     ]
   },
   rulesHtml:`
-    <h4>Categories</h4><p>Age 7–10, Under 14, Open, 60+ — each with Men's Singles, Women's Singles, Men's Doubles, Women's Doubles and Mixed Doubles.</p>
+    <h4>Categories</h4><p>Age 7–10, Under 14, Open, 40–59, and 60+ — each with Men's Singles, Women's Singles, Men's Doubles, Women's Doubles and Mixed Doubles.</p>
     <h4>Registration fees</h4>
-    <ul><li>Age 7–10 / Under 14: ₹100 per person singles, ₹200 per team doubles</li><li>Open: ₹200 per person singles, ₹400 per team doubles</li><li>60+ category: Free</li></ul>
+    <ul><li>Age 7–10 / Under 14: ₹100 per person singles, ₹200 per team doubles</li><li>Open / 40–59: ₹200 per person singles, ₹400 per team doubles</li><li>60+ category: Free</li></ul>
     <h4>Match rules &amp; format</h4>
     <p>Standard Badminton rules apply, subject to tournament-specific rules. Format, scoring, games and match duration will be finalised by the Sports Committee based on registrations and announced before the competition.</p>
     <h4>Reporting</h4>
@@ -890,6 +890,7 @@ const CATEGORY_FEE_RATE = {
   'u14':  100,
   '7-10': 100,
   'open': 200,
+  '40-59': 200,
   '60+':  0,
 };
 function computeFee(ev, catId){
@@ -968,6 +969,7 @@ const AGE_CATEGORY_RULES = {
   'u10':  {max:10},
   'u14':  {max:14},
   '7-10': {min:7, max:10},
+  '40-59': {min:40, max:59},
   '60+':  {min:60},
 };
 function ageRuleMessage(catLabel, rule){
@@ -986,7 +988,7 @@ const STATE = {
   params:{},
   adminAuthed:false,
   adminSection:'registrations',
-  regFilter:{status:'pending'},
+  regFilter:{status:'pending', sport:'all', category:'all', search:''},
   updatesFilter:'all',
   fixturesFilter:{sport:'all', status:'all'},
   cache:{ updates:[], fixtures:[], sponsors:[], photos:[], registrations:[], settings:null }
@@ -2329,6 +2331,7 @@ async function exportRegistrationsExcel(){
 async function adminRegistrations(){
   const main = document.getElementById('adminMain');
   const selectedIds = new Set();
+  const eligibleSports = SPORTS.filter(s=>s.registration.categories && s.registration.categories.length);
   main.innerHTML = `
     <div class="admin-toolbar" style="margin-bottom:0;">
       <div class="pill-tabs" id="regStatusPills" style="margin-bottom:0;">
@@ -2338,6 +2341,16 @@ async function adminRegistrations(){
         <button class="pill ${STATE.regFilter.status==='all'?'active':''}" data-s="all">All</button>
       </div>
       <button class="btn-dark btn-sm" id="exportExcelBtn">⬇ Download Excel Report</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">
+      <select id="regFilterSport" style="max-width:220px;">
+        <option value="all">All Sports</option>
+        ${eligibleSports.map(s=>`<option value="${s.id}" ${STATE.regFilter.sport===s.id?'selected':''}>${s.icon} ${s.name}</option>`).join('')}
+      </select>
+      <select id="regFilterCategory" style="max-width:200px;" ${STATE.regFilter.sport==='all'?'disabled':''}>
+        <option value="all">All Categories</option>
+      </select>
+      <input type="text" id="regFilterSearch" placeholder="🔍 Search name, phone or flat…" style="flex:1;min-width:200px;" value="${esc(STATE.regFilter.search)}">
     </div>
     <div id="regStatsRow"></div>
     <div id="regBulkBar"></div>
@@ -2349,6 +2362,30 @@ async function adminRegistrations(){
     adminRegistrations();
   });
   document.getElementById('exportExcelBtn').addEventListener('click', exportRegistrationsExcel);
+
+  const sportSel = document.getElementById('regFilterSport');
+  const catSel = document.getElementById('regFilterCategory');
+  function rebuildCategoryOptions(){
+    const sp = eligibleSports.find(s=>s.id===sportSel.value);
+    if(!sp){ catSel.innerHTML = `<option value="all">All Categories</option>`; catSel.disabled = true; return; }
+    catSel.disabled = false;
+    catSel.innerHTML = `<option value="all">All Categories</option>` + sp.registration.categories.map(c=>`<option value="${c.id}" ${STATE.regFilter.category===c.id?'selected':''}>${c.label}</option>`).join('');
+  }
+  rebuildCategoryOptions();
+  sportSel.addEventListener('change', ()=>{
+    STATE.regFilter.sport = sportSel.value;
+    STATE.regFilter.category = 'all';
+    adminRegistrations();
+  });
+  catSel.addEventListener('change', ()=>{
+    STATE.regFilter.category = catSel.value;
+    adminRegistrations();
+  });
+  document.getElementById('regFilterSearch').addEventListener('input', e=>{
+    STATE.regFilter.search = e.target.value;
+    applyFiltersAndRenderList(); // re-filter in place, doesn't rebuild the input so focus/typing isn't interrupted
+  });
+
   const all = await tFetchAll('registrations', 'submitted_at', false);
   STATE.cache.registrations = all;
   const counts = {pending:0, approved:0, rejected:0};
@@ -2359,10 +2396,31 @@ async function adminRegistrations(){
       <div class="stat-box"><div class="n">${counts.approved}</div><div class="l">Approved</div></div>
       <div class="stat-box"><div class="n">${all.length}</div><div class="l">Total</div></div>
     </div>`;
-  let list = STATE.regFilter.status==='all' ? all : all.filter(r=>r.status===STATE.regFilter.status);
+
   const host = document.getElementById('regListHost');
   const bulkBar = document.getElementById('regBulkBar');
-  const showBulk = STATE.regFilter.status==='pending' && list.length>0;
+  let list = [];
+  let showBulk = false;
+
+  function computeFilteredList(){
+    let l = STATE.regFilter.status==='all' ? all : all.filter(r=>r.status===STATE.regFilter.status);
+    if(STATE.regFilter.sport!=='all') l = l.filter(r=>r.sport_id===STATE.regFilter.sport);
+    if(STATE.regFilter.category!=='all') l = l.filter(r=>r.category_id===STATE.regFilter.category);
+    const q = STATE.regFilter.search.trim().toLowerCase();
+    if(q){
+      l = l.filter(r=>{
+        const nameMatch = (r.participants||[]).some(p=>(p.name||'').toLowerCase().includes(q));
+        const phoneMatch = (r.phone||'').toLowerCase().includes(q);
+        const flatMatch = (r.flat||'').toLowerCase().includes(q);
+        return nameMatch || phoneMatch || flatMatch;
+      });
+    }
+    return l;
+  }
+
+  function applyFiltersAndRenderList(){
+  list = computeFilteredList();
+  showBulk = STATE.regFilter.status==='pending' && list.length>0;
 
   function refreshBulkBar(){
     if(!showBulk){ bulkBar.innerHTML=''; return; }
@@ -2485,7 +2543,11 @@ async function adminRegistrations(){
       adminRegistrations();
     });
   });
+  } // end applyFiltersAndRenderList
+
+  applyFiltersAndRenderList();
 }
+
 
 /* ---------- Admin: Site Analytics ---------- */
 async function adminAnalytics(){
