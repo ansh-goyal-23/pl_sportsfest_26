@@ -2976,6 +2976,8 @@ async function adminSettings(){
   const main = document.getElementById('adminMain');
   const s = await getSettings();
   main.innerHTML = `
+    <h3 class="h-md" style="margin-bottom:18px;">Fest Overview</h3>
+    <div id="festOverview" style="margin-bottom:36px;"><div class="loading-dots">Crunching numbers…</div></div>
     <h3 class="h-md" style="margin-bottom:18px;">Payment Settings</h3>
     <div class="form-card" style="max-width:520px;padding:22px;margin-bottom:36px;">
       <div class="field"><label>UPI ID for receiving payments</label><input type="text" id="setUpi" value="${esc(s.upiId)}" placeholder="yourname@bank"></div>
@@ -2999,6 +3001,45 @@ async function adminSettings(){
       <p style="font-size:14px;line-height:1.6;">Organiser logins (Rahul, Tarun, Kapil, or anyone else on the committee) are managed in the Supabase dashboard, not here — <strong>Authentication → Users → Add user</strong>. This keeps a determined visitor from ever reaching the admin console, since there's no in-app sign-up.</p>
     </div>
   `;
+
+  // Fest Overview — pure read-only computation from existing registration
+  // data, nothing new stored. "Unique participants" is approximate: there's
+  // no single ID per person, so it dedupes by name+age+gender, which means
+  // two genuinely different people sharing an exact name/age/gender would
+  // merge into one. Scope is Pending + Approved for both money and
+  // participants — Rejected typically means the payment didn't go through
+  // validly, so it's excluded from both.
+  (async ()=>{
+    const all = await tFetchAll('registrations', 'submitted_at', false);
+    const counted = all.filter(r=>r.status==='pending' || r.status==='approved');
+    const approvedOnly = all.filter(r=>r.status==='approved');
+
+    const moneyCounted = counted.reduce((sum,r)=>sum+(r.fee||0), 0);
+    const moneyApproved = approvedOnly.reduce((sum,r)=>sum+(r.fee||0), 0);
+
+    function uniqueParticipantCount(regs){
+      const seen = new Set();
+      regs.forEach(r=>{
+        (r.participants||[]).forEach(p=>{
+          const key = `${(p.name||'').trim().toLowerCase()}|${p.age}|${(p.gender||'').trim().toLowerCase()}`;
+          seen.add(key);
+        });
+      });
+      return seen.size;
+    }
+    const uniqueAll = uniqueParticipantCount(counted);
+    const uniqueExFieldGames = uniqueParticipantCount(counted.filter(r=>r.sport_id!=='field-games'));
+
+    document.getElementById('festOverview').innerHTML = `
+      <div class="stat-row">
+        <div class="stat-box"><div class="n">₹${moneyCounted.toLocaleString('en-IN')}</div><div class="l">Money Collected</div></div>
+        <div class="stat-box"><div class="n">${uniqueAll}</div><div class="l">Unique Participants (Whole Fest)</div></div>
+        <div class="stat-box"><div class="n">${uniqueExFieldGames}</div><div class="l">Unique Participants (Excl. Field Games)</div></div>
+      </div>
+      <p class="hint" style="margin-top:10px;">Money and participant counts include Pending + Approved registrations (Rejected is excluded, since that payment likely didn't go through). Of the money collected, ₹${moneyApproved.toLocaleString('en-IN')} is from Approved registrations specifically. "Unique participants" is counted by name + age + gender across every registration — an approximation, since there's no single ID per person.</p>
+    `;
+  })();
+
   let qrFile = null;
   const qrBox = document.getElementById('setQrBox');
   const qrInput = document.getElementById('setQrInput');
