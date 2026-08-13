@@ -617,16 +617,17 @@ const SPORTS = [
   id:'basketball', name:'3+1 Basketball', short:'Half-court · 3v3', icon:'🏀',
   poc:[{name:'Ansh',phone:'9667184789'}],
   fixtureGenders:['male','female'],
-  dateLabel:'16 Aug', venue:"Society's Basketball Court", feeLabel:'₹300/team U10 & U14 · ₹200/person Open (auction)',
-  tagline:'Half-court 3-vs-3 — team registration for U10/U14, individual registration + player auction for Open.',
+  dateLabel:'16 Aug', venue:"Society's Basketball Court", feeLabel:'₹300/team U10 & U14 (or ₹100/person individual, random teams) · ₹200/person Open (auction)',
+  tagline:'Half-court 3-vs-3 — team or individual registration for U10/U14, individual registration + player auction for Open.',
   registration:{
     mode:'form',
     categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
     events:[
       {id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, requiredSize:3, feeType:'flatByCategory', feeByCategory:{u10:300,u14:300}, genderRule:'choose'},
+      {id:'individual-random', label:'Individual Registration (Random Team Assignment)', teamSize:1, genderRule:'choose'},
       {id:'individual', label:'Individual Registration (Player Auction)', teamSize:1, feeType:'flat', fee:200, genderRule:'choose', auctionFields:true}
     ],
-    eventsByCategory: { 'u10': ['team'], 'u14': ['team'], 'open': ['individual'] }
+    eventsByCategory: { 'u10': ['team','individual-random'], 'u14': ['team','individual-random'], 'open': ['individual'] }
   },
   rulesHtml:`
     <h4>Format</h4>
@@ -635,8 +636,9 @@ const SPORTS = [
     <p>Under 10, Under 14, and Open — separate competitions for Boys and Girls.</p>
     <h4>Under 10 &amp; Under 14</h4>
     <ul>
-      <li>Participants register in their respective age category, as a full team</li>
-      <li>The 3+1 half-court format is followed</li>
+      <li>If you already have a full team, register together as a full team — ₹300 per team</li>
+      <li>Don't have a team? Register individually instead — ₹100 per person. The Sports Committee will randomly assign individually-registered players into teams, with no bias toward any player</li>
+      <li>The 3+1 half-court format is followed either way</li>
     </ul>
     <h4>Open Category</h4>
     <ul>
