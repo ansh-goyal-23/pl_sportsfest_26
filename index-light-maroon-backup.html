@@ -674,28 +674,31 @@ const SPORTS = [
   id:'lawn-tennis', name:'Lawn Tennis', short:'Singles & Doubles', icon:'🎾',
   poc:[{name:'Raj',phone:'9818361556'}],
   fixtureGenders:['male','female','mixed'],
-  dateLabel:'16 Aug', venue:"Society's Lawn Tennis Court", feeLabel:'U14 ₹200/team · Open ₹200 singles, ₹400 doubles',
-  tagline:"Under-14 doubles plus Open Men's, Women's and Mixed Doubles.",
+  dateLabel:'16 Aug', venue:"Society's Lawn Tennis Court", feeLabel:'U14 ₹100 singles, ₹200/team doubles · Open ₹200 singles, ₹400 doubles',
+  tagline:"Men's & Women's Singles and Doubles for Under-14 and Open, plus Open Mixed Doubles.",
   registration:{
     mode:'form',
-    categories:[{id:'u14',label:'Under 14 (doubles only)'},{id:'open',label:'Open'}],
+    categories:[{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
     events:[
-      {id:'singles', label:"Singles — Men's / Women's (Open only)", teamSize:1, genderRule:'choose'},
+      {id:'singles', label:"Singles — Men's / Women's", teamSize:1, genderRule:'choose'},
       {id:'doubles', label:'Doubles', teamSize:2, genderRule:'chooseOrMixed', mixedCategories:['open']}
     ],
-    eventsByCategory: { 'u14': ['doubles'], 'open': ['singles','doubles'] }
+    eventsByCategory: { 'u14': ['singles','doubles'], 'open': ['singles','doubles'] }
   },
   rulesHtml:`
     <h4>Categories &amp; events</h4>
     <table><tr><th>Category</th><th>Event</th></tr>
+    <tr><td>Under 14</td><td>Men's Singles</td></tr>
+    <tr><td>Under 14</td><td>Women's Singles</td></tr>
     <tr><td>Under 14</td><td>Doubles</td></tr>
     <tr><td>Open</td><td>Men's Singles</td></tr>
     <tr><td>Open</td><td>Women's Singles</td></tr>
     <tr><td>Open</td><td>Doubles — Mixed Doubles allowed</td></tr></table>
     <h4>Registration fees</h4>
-    <ul><li>Under 14 Doubles: ₹200 per team</li><li>Open Singles: ₹200 per person</li><li>Open Doubles: ₹400 per team</li></ul>
+    <ul><li>Under 14 Singles: ₹100 per person</li><li>Under 14 Doubles: ₹200 per team</li><li>Open Singles: ₹200 per person</li><li>Open Doubles: ₹400 per team</li></ul>
     <h4>Registration</h4>
     <ul>
+      <li>Under 14 Singles: individual registration, both eligible for Under 14</li>
       <li>Under 14 Doubles: 2 players per team, both eligible for Under 14</li>
       <li>Open Men's / Women's Singles: individual registration</li>
       <li>Open Doubles: 2 players per team, mixed doubles permitted</li>
