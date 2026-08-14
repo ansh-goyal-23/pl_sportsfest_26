@@ -1043,7 +1043,7 @@ const STATE = {
   params:{},
   adminAuthed:false,
   adminSection:'registrations',
-  regFilter:{status:'pending', sport:'all', category:'all', search:''},
+  regFilter:{status:'pending', sport:'all', category:'all', gender:'all', search:''},
   updatesFilter:'all',
   fixturesFilter:{sport:'all', status:'all'},
   cache:{ updates:[], fixtures:[], sponsors:[], photos:[], registrations:[], settings:null }
@@ -2424,8 +2424,15 @@ async function adminRegistrations(){
       <select id="regFilterCategory" style="max-width:200px;" ${STATE.regFilter.sport==='all'?'disabled':''}>
         <option value="all">All Categories</option>
       </select>
+      <select id="regFilterGender" style="max-width:160px;">
+        <option value="all" ${STATE.regFilter.gender==='all'?'selected':''}>All Genders</option>
+        <option value="boys" ${STATE.regFilter.gender==='boys'?'selected':''}>Male</option>
+        <option value="girls" ${STATE.regFilter.gender==='girls'?'selected':''}>Female</option>
+        <option value="mixed" ${STATE.regFilter.gender==='mixed'?'selected':''}>Mixed</option>
+      </select>
       <input type="text" id="regFilterSearch" placeholder="🔍 Search name, phone or flat…" style="flex:1;min-width:200px;" value="${esc(STATE.regFilter.search)}">
     </div>
+    <div id="regCategoryBreakdown"></div>
     <div id="regStatsRow"></div>
     <div id="regBulkBar"></div>
     <div id="regListHost"><div class="loading-dots">Loading registrations…</div></div>
@@ -2439,6 +2446,7 @@ async function adminRegistrations(){
 
   const sportSel = document.getElementById('regFilterSport');
   const catSel = document.getElementById('regFilterCategory');
+  const genderSel = document.getElementById('regFilterGender');
   function rebuildCategoryOptions(){
     const sp = eligibleSports.find(s=>s.id===sportSel.value);
     if(!sp){ catSel.innerHTML = `<option value="all">All Categories</option>`; catSel.disabled = true; return; }
@@ -2453,6 +2461,10 @@ async function adminRegistrations(){
   });
   catSel.addEventListener('change', ()=>{
     STATE.regFilter.category = catSel.value;
+    adminRegistrations();
+  });
+  genderSel.addEventListener('change', ()=>{
+    STATE.regFilter.gender = genderSel.value;
     adminRegistrations();
   });
   document.getElementById('regFilterSearch').addEventListener('input', e=>{
@@ -2471,6 +2483,27 @@ async function adminRegistrations(){
       <div class="stat-box"><div class="n">${all.length}</div><div class="l">Total</div></div>
     </div>`;
 
+  // Per-category registration counts for the selected sport — Pending +
+  // Approved only (matches the same scope used for the money-collected
+  // figure in Settings), so this reflects genuine sign-ups rather than
+  // ones that were rejected. Useful for spotting which categories are
+  // close to the minimum-registrations cutoff.
+  const selectedSport = eligibleSports.find(s=>s.id===STATE.regFilter.sport);
+  const breakdownHost = document.getElementById('regCategoryBreakdown');
+  if(selectedSport){
+    const scoped = all.filter(r=>r.sport_id===selectedSport.id && (r.status==='pending'||r.status==='approved'));
+    const counts2 = selectedSport.registration.categories.map(c=>({
+      label: c.label,
+      count: scoped.filter(r=>r.category_id===c.id).length
+    }));
+    breakdownHost.innerHTML = `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        ${counts2.map(c=>`<span class="badge gold" style="font-weight:400;">${esc(c.label)}: <strong>${c.count}</strong></span>`).join('')}
+      </div>`;
+  }else{
+    breakdownHost.innerHTML = '';
+  }
+
   const host = document.getElementById('regListHost');
   const bulkBar = document.getElementById('regBulkBar');
   let list = [];
@@ -2480,6 +2513,7 @@ async function adminRegistrations(){
     let l = STATE.regFilter.status==='all' ? all : all.filter(r=>r.status===STATE.regFilter.status);
     if(STATE.regFilter.sport!=='all') l = l.filter(r=>r.sport_id===STATE.regFilter.sport);
     if(STATE.regFilter.category!=='all') l = l.filter(r=>r.category_id===STATE.regFilter.category);
+    if(STATE.regFilter.gender!=='all') l = l.filter(r=>r.gender_cat===STATE.regFilter.gender);
     const q = STATE.regFilter.search.trim().toLowerCase();
     if(q){
       l = l.filter(r=>{
