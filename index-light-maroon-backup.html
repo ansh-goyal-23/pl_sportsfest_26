@@ -596,7 +596,11 @@ const SPORTS = [
   tagline:'Half-court 3-vs-3 — team or individual registration for U10/U14, individual registration + player auction for Open.',
   registration:{
     mode:'form',
-    categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
+    categories:[
+      {id:'u10',label:'Under 10', closesAt:'2026-08-15T00:00:00+05:30'},
+      {id:'u14',label:'Under 14', closesAt:'2026-08-15T00:00:00+05:30'},
+      {id:'open',label:'Open', closed:true, closedMessage:"Open category registration is now closed. Team formation happens at tonight's player auction — 8:30 PM at Club Laurel."}
+    ],
     events:[
       {id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, requiredSize:3, feeType:'flatByCategory', feeByCategory:{u10:300,u14:300}, genderRule:'choose'},
       {id:'individual-random', label:'Individual Registration (Random Team Assignment)', teamSize:1, genderRule:'choose'},
@@ -1032,6 +1036,19 @@ function ageRuleMessage(catLabel, rule){
   if(rule.max!=null) return `${catLabel} needs an age of ${rule.max} or under`;
   if(rule.min!=null) return `${catLabel} needs an age of ${rule.min} or above`;
   return '';
+}
+
+// A category can be closed two ways: permanently (closed:true) or on a
+// timer (closesAt: an ISO datetime — checked live against the browser's
+// current time, so it locks itself out at the right moment with no need
+// to come back and flip a switch manually).
+function categoryClosedInfo(catObj){
+  if(!catObj) return {closed:false};
+  if(catObj.closed) return {closed:true, message: catObj.closedMessage || `Registration for ${catObj.label} is now closed.`};
+  if(catObj.closesAt && new Date() >= new Date(catObj.closesAt)){
+    return {closed:true, message: catObj.closedMessage || `Registration for ${catObj.label} closed at ${new Date(catObj.closesAt).toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'short'})}.`};
+  }
+  return {closed:false};
 }
 </script>
 <script>
@@ -1716,12 +1733,27 @@ function currentEventConfig(sportId){
 async function updateRegForm(sportId){
   const s = getSport(sportId);
   const cfg = s.registration;
-  const ev = currentEventConfig(sportId);
   const catSel = document.getElementById('regCategory');
+  const catObj = cfg.categories.find(c=>c.id===catSel.value);
+
+  const closedInfo = categoryClosedInfo(catObj);
+  if(closedInfo.closed){
+    document.getElementById('regCategoryHint').textContent = '';
+    document.getElementById('regGenderWrap').innerHTML = '';
+    document.getElementById('regParticipants').innerHTML = `<div class="msg-banner err" style="margin-top:10px;">🔒 ${esc(closedInfo.message)}</div>`;
+    document.getElementById('regAuctionWrap').innerHTML = '';
+    document.getElementById('regPaymentArea').innerHTML = '';
+    const evSelClosed = document.getElementById('regEvent');
+    if(evSelClosed) evSelClosed.innerHTML = '';
+    document.getElementById('regSubmitBtn').disabled = true;
+    return;
+  }
+  document.getElementById('regSubmitBtn').disabled = false;
+
+  const ev = currentEventConfig(sportId);
   const isFree = computeFee(ev, catSel.value)===0;
   const teamSize = ev.teamSize;
 
-  const catObj = cfg.categories.find(c=>c.id===catSel.value);
   const ageRule = AGE_CATEGORY_RULES[catSel.value];
   const hintEl = document.getElementById('regCategoryHint');
   if(ageRule){
@@ -1903,9 +1935,16 @@ async function submitRegistration(sportId){
   const ev = currentEventConfig(sportId);
   const catSel = document.getElementById('regCategory');
   const catObj = cfg.categories.find(c=>c.id===catSel.value);
+  const msgArea = document.getElementById('regMsgArea');
+
+  const closedInfo = categoryClosedInfo(catObj);
+  if(closedInfo.closed){
+    msgArea.innerHTML = `<div class="msg-banner err">🔒 ${esc(closedInfo.message)}</div>`;
+    return;
+  }
+
   const feeAmount = computeFee(ev, catSel.value);
   const isFree = feeAmount===0;
-  const msgArea = document.getElementById('regMsgArea');
   const phone = document.getElementById('regPhone').value.trim();
   const flat = document.getElementById('regFlat').value.trim();
   const names = [...document.querySelectorAll('.p-name')].map(i=>i.value.trim());
