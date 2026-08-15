@@ -621,11 +621,7 @@ const SPORTS = [
   tagline:'Half-court 3-vs-3 — team or individual registration for U10/U14, individual registration + player auction for Open.',
   registration:{
     mode:'form',
-    categories:[
-      {id:'u10',label:'Under 10', closesAt:'2026-08-15T00:00:00+05:30'},
-      {id:'u14',label:'Under 14', closesAt:'2026-08-15T00:00:00+05:30'},
-      {id:'open',label:'Open', closed:true, closedMessage:"Open category registration is now closed. Team formation happens at tonight's player auction — 8:30 PM at Club Laurel."}
-    ],
+    categories:[{id:'u10',label:'Under 10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
     events:[
       {id:'team', label:'3+1 Team (3 playing + 1 substitute)', teamSize:4, requiredSize:3, feeType:'flatByCategory', feeByCategory:{u10:300,u14:300}, genderRule:'choose'},
       {id:'individual-random', label:'Individual Registration (Random Team Assignment)', teamSize:1, genderRule:'choose'},
@@ -1042,15 +1038,28 @@ function ageRuleMessage(catLabel, rule){
   return '';
 }
 
-// A category can be closed two ways: permanently (closed:true) or on a
-// timer (closesAt: an ISO datetime — checked live against the browser's
-// current time, so it locks itself out at the right moment with no need
-// to come back and flip a switch manually).
-function categoryClosedInfo(catObj){
+// A category can be closed two ways: permanently, or on a timer — both
+// controlled live from Admin (Registration Status tab), not hardcoded in
+// this file, so organisers never need a code change or redeploy to open
+// or close a category. CATEGORY_STATUS is fetched once when the Register
+// page loads (see renderRegister) and read synchronously here.
+let CATEGORY_STATUS = {};
+async function loadCategoryStatus(){
+  try{
+    const {data, error} = await sb.from('category_status').select('*');
+    if(error || !data) { CATEGORY_STATUS = {}; return; }
+    const map = {};
+    data.forEach(row=>{ map[row.sport_id+'|'+row.category_id] = row; });
+    CATEGORY_STATUS = map;
+  }catch(e){ CATEGORY_STATUS = {}; }
+}
+function categoryClosedInfo(catObj, sportId){
   if(!catObj) return {closed:false};
-  if(catObj.closed) return {closed:true, message: catObj.closedMessage || `Registration for ${catObj.label} is now closed.`};
-  if(catObj.closesAt && new Date() >= new Date(catObj.closesAt)){
-    return {closed:true, message: catObj.closedMessage || `Registration for ${catObj.label} closed at ${new Date(catObj.closesAt).toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'short'})}.`};
+  const row = CATEGORY_STATUS[sportId+'|'+catObj.id];
+  if(!row) return {closed:false};
+  if(row.closed) return {closed:true, message: row.closed_message || `Registration for ${catObj.label} is now closed.`};
+  if(row.closes_at && new Date() >= new Date(row.closes_at)){
+    return {closed:true, message: row.closed_message || `Registration for ${catObj.label} closed at ${new Date(row.closes_at).toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'short'})}.`};
   }
   return {closed:false};
 }
@@ -1648,6 +1657,7 @@ async function renderContact(){
 let REG_AUCTION_PHOTO_FILE = null; // holds the raw File for the basketball auction photo, uploaded at final confirm time
 
 async function renderRegister(preSportId){
+  await loadCategoryStatus();
   renderShell(`
     <div class="detail-band">
       <div class="wrap">
@@ -1759,7 +1769,7 @@ async function updateRegForm(sportId){
   const catSel = document.getElementById('regCategory');
   const catObj = cfg.categories.find(c=>c.id===catSel.value);
 
-  const closedInfo = categoryClosedInfo(catObj);
+  const closedInfo = categoryClosedInfo(catObj, sportId);
   if(closedInfo.closed){
     document.getElementById('regCategoryHint').textContent = '';
     document.getElementById('regGenderWrap').innerHTML = '';
@@ -1960,7 +1970,7 @@ async function submitRegistration(sportId){
   const catObj = cfg.categories.find(c=>c.id===catSel.value);
   const msgArea = document.getElementById('regMsgArea');
 
-  const closedInfo = categoryClosedInfo(catObj);
+  const closedInfo = categoryClosedInfo(catObj, sportId);
   if(closedInfo.closed){
     msgArea.innerHTML = `<div class="msg-banner err">🔒 ${esc(closedInfo.message)}</div>`;
     return;
@@ -2315,6 +2325,7 @@ async function renderAdmin(){
 
 const ADMIN_SECTIONS = [
   {id:'registrations', label:'Registrations'},
+  {id:'regstatus', label:'Registration Status'},
   {id:'analytics', label:'Site Analytics'},
   {id:'updates', label:'Updates & Announcements'},
   {id:'fixtures', label:'Fixtures & Results'},
@@ -2355,6 +2366,7 @@ async function renderAdminPanel(){
 async function loadAdminSection(){
   const map = {
     registrations: adminRegistrations,
+    regstatus: adminRegistrationStatus,
     analytics: adminAnalytics,
     updates: adminUpdates,
     fixtures: adminFixtures,
@@ -2716,6 +2728,112 @@ async function adminRegistrations(){
   } // end applyFiltersAndRenderList
 
   applyFiltersAndRenderList();
+}
+
+/* ---------- Admin: Registration Status (open/close categories) ---------- */
+async function adminRegistrationStatus(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `
+    <p class="hint" style="margin-bottom:20px;">Close a category to stop new registrations for it immediately — the registration form shows a "closed" message in its place. Reopen anytime, or schedule an automatic close for a future date/time (e.g. a deadline) instead of a hard close. Changes take effect for visitors the next time they load the Register page.</p>
+    <div id="regStatusHost"><div class="loading-dots">Loading…</div></div>
+  `;
+  const eligibleSports = SPORTS.filter(s=>s.registration.mode==='form' && s.registration.categories && s.registration.categories.length);
+  const {data, error} = await sb.from('category_status').select('*');
+  const statusMap = {};
+  (data||[]).forEach(row=>{ statusMap[row.sport_id+'|'+row.category_id] = row; });
+
+  function computeStatus(row){
+    if(!row) return {state:'open'};
+    if(row.closed) return {state:'closed', message: row.closed_message};
+    if(row.closes_at && new Date() >= new Date(row.closes_at)) return {state:'closed-by-time', message: row.closed_message, closesAt: row.closes_at};
+    if(row.closes_at) return {state:'scheduled', closesAt: row.closes_at, message: row.closed_message};
+    return {state:'open'};
+  }
+
+  const host = document.getElementById('regStatusHost');
+  host.innerHTML = eligibleSports.map(sp => `
+    <div class="card" style="margin-bottom:20px;">
+      <h3 style="font-size:17px;margin-bottom:12px;">${sp.icon} ${esc(sp.name)}</h3>
+      ${sp.registration.categories.map(cat=>{
+        const key = sp.id+'|'+cat.id;
+        const row = statusMap[key];
+        const st = computeStatus(row);
+        const badge = st.state==='open' ? `<span class="badge green">Open</span>`
+          : st.state==='scheduled' ? `<span class="badge gold">Closes ${new Date(st.closesAt).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</span>`
+          : `<span class="badge maroon">Closed${st.state==='closed-by-time'?' (time reached)':''}</span>`;
+        return `
+        <div style="border-top:1px solid var(--line);padding:14px 0;" data-cat-row="${key}">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <div><strong>${esc(cat.label)}</strong> &nbsp; ${badge}</div>
+            <div style="display:flex;gap:8px;">
+              ${st.state==='open' ? `<button class="btn-dark btn-sm" data-close-now="${key}">Close Now</button>` : `<button class="btn btn-outline btn-sm" data-reopen="${key}">Reopen</button>`}
+              <button class="btn-outline btn-sm" data-toggle-schedule="${key}">Schedule…</button>
+            </div>
+          </div>
+          <div id="sched-${key.replace('|','-')}" style="display:none;margin-top:12px;padding:12px;background:var(--cream-dim);">
+            <div class="form-grid-2">
+              <div class="field"><label>Auto-close at</label><input type="datetime-local" id="closesAt-${key.replace('|','-')}" value="${row?.closes_at ? new Date(row.closes_at).toISOString().slice(0,16) : ''}"></div>
+              <div class="field"><label>Custom message (optional)</label><input type="text" id="msg-${key.replace('|','-')}" value="${row?.closed_message ? esc(row.closed_message) : ''}" placeholder="Shown to visitors once closed"></div>
+            </div>
+            <button class="btn btn-primary btn-sm" data-save-schedule="${key}">Save Schedule</button>
+            ${row?.closes_at ? `<button class="btn-del" data-clear-schedule="${key}" style="margin-left:8px;">Clear Schedule</button>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
+
+  async function upsertStatus(sportId, categoryId, patch){
+    const key = sportId+'|'+categoryId;
+    const existing = statusMap[key] || {};
+    const row = {sport_id: sportId, category_id: categoryId, closed: false, closes_at: null, closed_message: null, ...existing, ...patch, updated_at: new Date().toISOString()};
+    const {error} = await sb.from('category_status').upsert(row, {onConflict:'sport_id,category_id'});
+    if(error){ toast('Could not save — try again', 'err'); return false; }
+    return true;
+  }
+
+  host.querySelectorAll('[data-close-now]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const [sportId, categoryId] = el.dataset.closeNow.split('|');
+      if(!confirm(`Close registration for this category right now?`)) return;
+      const ok = await upsertStatus(sportId, categoryId, {closed:true, closes_at:null});
+      if(ok){ toast('Category closed', 'ok'); adminRegistrationStatus(); }
+    });
+  });
+  host.querySelectorAll('[data-reopen]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const [sportId, categoryId] = el.dataset.reopen.split('|');
+      if(!confirm(`Reopen registration for this category?`)) return;
+      const ok = await upsertStatus(sportId, categoryId, {closed:false, closes_at:null});
+      if(ok){ toast('Category reopened', 'ok'); adminRegistrationStatus(); }
+    });
+  });
+  host.querySelectorAll('[data-toggle-schedule]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const key = el.dataset.toggleSchedule;
+      const panel = document.getElementById('sched-'+key.replace('|','-'));
+      panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+    });
+  });
+  host.querySelectorAll('[data-save-schedule]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const key = el.dataset.saveSchedule;
+      const [sportId, categoryId] = key.split('|');
+      const dtVal = document.getElementById('closesAt-'+key.replace('|','-')).value;
+      const msgVal = document.getElementById('msg-'+key.replace('|','-')).value.trim();
+      if(!dtVal){ toast('Pick a date and time first', 'err'); return; }
+      const ok = await upsertStatus(sportId, categoryId, {closed:false, closes_at: new Date(dtVal).toISOString(), closed_message: msgVal || null});
+      if(ok){ toast('Schedule saved', 'ok'); adminRegistrationStatus(); }
+    });
+  });
+  host.querySelectorAll('[data-clear-schedule]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const key = el.dataset.clearSchedule;
+      const [sportId, categoryId] = key.split('|');
+      const ok = await upsertStatus(sportId, categoryId, {closes_at:null});
+      if(ok){ toast('Schedule cleared', 'info'); adminRegistrationStatus(); }
+    });
+  });
 }
 
 /* ---------- Admin: Site Analytics ---------- */
