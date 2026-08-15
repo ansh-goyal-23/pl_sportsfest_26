@@ -1048,8 +1048,15 @@ function computeLiveRemaining(match){
   }
   return match.remaining_seconds;
 }
-function teamTotal(players){
-  return (players||[]).reduce((sum,p)=>sum+(p.points||0), 0);
+// Scores are computed live from score_events, never stored as a mutable
+// counter — every scoring tap is its own permanent, timestamped record,
+// and a corrected/mistaken tap gets excluded (not deleted), so the total
+// is always "sum of every non-excluded event," recomputed fresh each time.
+function teamScoreFromEvents(events, team){
+  return (events||[]).filter(e=>e.team===team && !e.excluded).reduce((sum,e)=>sum+e.points, 0);
+}
+function playerScoreFromEvents(events, team, playerName){
+  return (events||[]).filter(e=>e.team===team && e.player_name===playerName && !e.excluded).reduce((sum,e)=>sum+e.points, 0);
 }
 
 function ageRuleMessage(catLabel, rule){
@@ -1684,6 +1691,9 @@ async function renderScorer(param){
   if(error || !match || match.scorer_token !== token){ errPage('This scorer link is invalid, or the match no longer exists.'); return; }
 
   let m = match; // this device's local working copy — the source of truth for this scoring session
+  let events = [];
+  const {data: evData} = await sb.from('score_events').select('*').eq('match_id', matchId).order('created_at', {ascending:false});
+  events = evData || [];
 
   function renderUI(){
     const remaining = computeLiveRemaining(m);
@@ -1700,13 +1710,24 @@ async function renderScorer(param){
           </div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;background:var(--cream-dim);border-radius:10px;padding:16px;margin-bottom:18px;">
-          <div style="text-align:center;flex:1;"><div style="font-size:13px;color:var(--slate);">${esc(m.team_a_name)}</div><div style="font-size:34px;font-weight:800;">${teamTotal(m.team_a_players)}</div></div>
+          <div style="text-align:center;flex:1;"><div style="font-size:13px;color:var(--slate);">${esc(m.team_a_name)}</div><div style="font-size:34px;font-weight:800;">${teamScoreFromEvents(events,'A')}</div></div>
           <div style="color:var(--slate);font-size:13px;">VS</div>
-          <div style="text-align:center;flex:1;"><div style="font-size:13px;color:var(--slate);">${esc(m.team_b_name)}</div><div style="font-size:34px;font-weight:800;">${teamTotal(m.team_b_players)}</div></div>
+          <div style="text-align:center;flex:1;"><div style="font-size:13px;color:var(--slate);">${esc(m.team_b_name)}</div><div style="font-size:34px;font-weight:800;">${teamScoreFromEvents(events,'B')}</div></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
           ${renderTeamCol('A', m.team_a_name, m.team_a_players)}
           ${renderTeamCol('B', m.team_b_name, m.team_b_players)}
+        </div>
+        <div style="font-size:13px;color:var(--slate);margin-bottom:8px;">📋 Score Log ${events.length ? `(${events.length})` : ''}</div>
+        <div style="max-height:280px;overflow-y:auto;background:var(--cream-dim);border-radius:10px;">
+          ${!events.length ? `<p style="padding:14px;color:var(--slate);font-size:13px;">No points scored yet.</p>` : events.map(e=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);${e.excluded?'opacity:0.4;':''}">
+              <div>
+                <span style="font-family:monospace;font-size:11px;color:var(--slate);">${new Date(e.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>
+                <span style="margin-left:8px;font-size:13.5px;">${esc(e.player_name)} <strong style="color:var(--gold);">+${e.points}</strong> <span style="color:var(--slate);font-size:11px;">(${e.team==='A'?esc(m.team_a_name):esc(m.team_b_name)})</span></span>
+              </div>
+              <button class="toggleEventBtn" data-eid="${e.id}" data-excluded="${e.excluded}" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:none;color:${e.excluded?'var(--green)':'#E85C4A'};flex:none;">${e.excluded ? 'Count Again' : 'Not Count'}</button>
+            </div>`).join('')}
         </div>
       </div>
     `;
@@ -1716,20 +1737,20 @@ async function renderScorer(param){
   function renderTeamCol(side, name, players){
     return `<div>
       <div style="font-size:13px;color:var(--slate);margin-bottom:8px;text-align:center;">${esc(name)}</div>
-      ${(players||[]).map((p,i)=>`
+      ${(players||[]).map((p)=>`
         <div style="background:var(--cream-dim);border-radius:8px;padding:10px;margin-bottom:8px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <span style="font-size:13px;">${esc(p.name)}</span>
-            <span style="font-size:19px;font-weight:800;color:var(--gold);">${p.points||0}</span>
+            <span style="font-size:19px;font-weight:800;color:var(--gold);">${playerScoreFromEvents(events, side, p.name)}</span>
           </div>
           <div style="display:flex;gap:6px;">
-            ${[1,2,3].map(pts=>`<button class="scoreBtn" data-side="${side}" data-idx="${i}" data-pts="${pts}" style="flex:1;padding:10px 0;background:#1E2A38;color:var(--bright);border:none;border-radius:6px;font-weight:800;font-size:15px;">+${pts}</button>`).join('')}
+            ${[1,2,3].map(pts=>`<button class="scoreBtn" data-side="${side}" data-name="${esc(p.name)}" data-pts="${pts}" style="flex:1;padding:10px 0;background:#1E2A38;color:var(--bright);border:none;border-radius:6px;font-weight:800;font-size:15px;">+${pts}</button>`).join('')}
           </div>
         </div>`).join('')}
     </div>`;
   }
 
-  async function persist(patch){
+  async function persistMatch(patch){
     m = {...m, ...patch};
     await sb.from('matches').update({...patch, updated_at:new Date().toISOString()}).eq('id', m.id);
   }
@@ -1737,10 +1758,21 @@ async function renderScorer(param){
   function wireEvents(){
     document.querySelectorAll('.scoreBtn').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
-        const side = btn.dataset.side, idx = Number(btn.dataset.idx), pts = Number(btn.dataset.pts);
-        const key = side==='A' ? 'team_a_players' : 'team_b_players';
-        const players = m[key].map((p,i)=> i===idx ? {...p, points:(p.points||0)+pts} : p);
-        await persist({[key]: players});
+        const side = btn.dataset.side, playerName = btn.dataset.name, pts = Number(btn.dataset.pts);
+        // Every tap is a brand-new permanent record — never a mutation of
+        // an existing number — so a mistake is always fixable by excluding
+        // the wrong entry afterward, never by silently losing what happened.
+        const {data, error} = await sb.from('score_events').insert({match_id: m.id, team: side, player_name: playerName, points: pts}).select().single();
+        if(!error && data) events = [data, ...events];
+        renderUI();
+      });
+    });
+    document.querySelectorAll('.toggleEventBtn').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const eid = btn.dataset.eid;
+        const currentlyExcluded = btn.dataset.excluded === 'true';
+        const {error} = await sb.from('score_events').update({excluded: !currentlyExcluded}).eq('id', eid);
+        if(!error) events = events.map(e => e.id===eid ? {...e, excluded: !currentlyExcluded} : e);
         renderUI();
       });
     });
@@ -1749,9 +1781,9 @@ async function renderScorer(param){
       startPauseBtn.addEventListener('click', async ()=>{
         if(m.clock_state==='running'){
           const remaining = computeLiveRemaining(m);
-          await persist({clock_state:'paused', remaining_seconds: Math.round(remaining), running_since: null});
+          await persistMatch({clock_state:'paused', remaining_seconds: Math.round(remaining), running_since: null});
         }else{
-          await persist({clock_state:'running', running_since: new Date().toISOString()});
+          await persistMatch({clock_state:'running', running_since: new Date().toISOString()});
         }
         renderUI();
       });
@@ -1761,7 +1793,7 @@ async function renderScorer(param){
       endBtn.addEventListener('click', async ()=>{
         if(!confirm('End this match? The clock will stop.')) return;
         const remaining = computeLiveRemaining(m);
-        await persist({clock_state:'ended', remaining_seconds: Math.round(remaining), running_since: null});
+        await persistMatch({clock_state:'ended', remaining_seconds: Math.round(remaining), running_since: null});
         renderUI();
       });
     }
@@ -1783,6 +1815,13 @@ async function renderScorer(param){
 async function renderLiveScore(param){
   if(!param){
     const {data} = await sb.from('matches').select('*').in('clock_state', ['running','paused']).order('created_at', {ascending:false});
+    const matchIds = (data||[]).map(m=>m.id);
+    let allEvents = [];
+    if(matchIds.length){
+      const {data: evData} = await sb.from('score_events').select('*').in('match_id', matchIds);
+      allEvents = evData || [];
+    }
+    const eventsFor = (matchId) => allEvents.filter(e=>e.match_id===matchId);
     renderShell(`
       <div class="detail-band">
         <div class="wrap">
@@ -1793,12 +1832,15 @@ async function renderLiveScore(param){
       <section class="wrap">
         ${!data || !data.length ? `<div class="empty-state"><div class="em-icon">🏀</div><p>No matches are live right now — check back during Basketball match times!</p></div>` : `
           <div class="grid grid-2">
-            ${data.map(m=>`
+            ${data.map(m=>{
+              const ev = eventsFor(m.id);
+              return `
               <a href="#livescore/${m.id}" class="card sport-card" style="text-decoration:none;color:inherit;padding:20px;">
                 <span class="badge ${m.clock_state==='running'?'green':'gold'}">${esc((m.category_id||'').toUpperCase())} · ${m.clock_state==='running'?'🔴 Live':'⏸ Paused'}</span>
-                <h3 style="margin-top:10px;font-size:18px;">${esc(m.team_a_name)} ${teamTotal(m.team_a_players)} — ${teamTotal(m.team_b_players)} ${esc(m.team_b_name)}</h3>
+                <h3 style="margin-top:10px;font-size:18px;">${esc(m.team_a_name)} ${teamScoreFromEvents(ev,'A')} — ${teamScoreFromEvents(ev,'B')} ${esc(m.team_b_name)}</h3>
                 <p style="margin-top:8px;color:var(--slate);">${formatClock(computeLiveRemaining(m))} remaining</p>
-              </a>`).join('')}
+              </a>`;
+            }).join('')}
           </div>
         `}
       </section>
@@ -1812,6 +1854,9 @@ async function renderLiveScore(param){
     return;
   }
   let m = match;
+  let events = [];
+  const {data: evData} = await sb.from('score_events').select('*').eq('match_id', param);
+  events = evData || [];
 
   renderShell(`
     <div class="detail-band"><div class="wrap"><div class="eyebrow" style="color:var(--gold-light)">Live</div><h1 class="h-lg" style="color:var(--bright)">Live Score</h1></div></div>
@@ -1826,27 +1871,33 @@ async function renderLiveScore(param){
         <span class="badge ${m.clock_state==='running'?'green':(m.clock_state==='ended'?'maroon':'gold')}">${m.clock_state==='running'?'🔴 Live':m.clock_state==='ended'?'Match Ended':m.clock_state==='paused'?'⏸ Paused':'Not Started'}</span>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;background:var(--cream-dim);border-radius:10px;padding:18px;margin-bottom:24px;">
-        <div style="text-align:center;flex:1;"><div style="font-size:14px;color:var(--slate);">${esc(m.team_a_name)}</div><div style="font-size:38px;font-weight:800;">${teamTotal(m.team_a_players)}</div></div>
+        <div style="text-align:center;flex:1;"><div style="font-size:14px;color:var(--slate);">${esc(m.team_a_name)}</div><div style="font-size:38px;font-weight:800;">${teamScoreFromEvents(events,'A')}</div></div>
         <div style="color:var(--slate);">VS</div>
-        <div style="text-align:center;flex:1;"><div style="font-size:14px;color:var(--slate);">${esc(m.team_b_name)}</div><div style="font-size:38px;font-weight:800;">${teamTotal(m.team_b_players)}</div></div>
+        <div style="text-align:center;flex:1;"><div style="font-size:14px;color:var(--slate);">${esc(m.team_b_name)}</div><div style="font-size:38px;font-weight:800;">${teamScoreFromEvents(events,'B')}</div></div>
       </div>
       <div class="grid grid-2">
-        <div><h4 style="margin-bottom:10px;">${esc(m.team_a_name)}</h4>${(m.team_a_players||[]).map(p=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);"><span>${esc(p.name)}</span><strong>${p.points||0}</strong></div>`).join('')}</div>
-        <div><h4 style="margin-bottom:10px;">${esc(m.team_b_name)}</h4>${(m.team_b_players||[]).map(p=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);"><span>${esc(p.name)}</span><strong>${p.points||0}</strong></div>`).join('')}</div>
+        <div><h4 style="margin-bottom:10px;">${esc(m.team_a_name)}</h4>${(m.team_a_players||[]).map(p=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);"><span>${esc(p.name)}</span><strong>${playerScoreFromEvents(events,'A',p.name)}</strong></div>`).join('')}</div>
+        <div><h4 style="margin-bottom:10px;">${esc(m.team_b_name)}</h4>${(m.team_b_players||[]).map(p=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);"><span>${esc(p.name)}</span><strong>${playerScoreFromEvents(events,'B',p.name)}</strong></div>`).join('')}</div>
       </div>
     `;
   }
   renderUI();
 
   // One combined interval: ticks the clock display every second, and
-  // re-fetches the match from the database every 4th tick to pick up
-  // the scorer's latest updates. Cleared automatically by render().
+  // re-fetches the match + score events from the database every 4th tick
+  // to pick up the scorer's latest updates. Cleared automatically by render().
   let tickCount = 0;
   ACTIVE_POLL_INTERVAL = setInterval(async ()=>{
     tickCount++;
     if(tickCount % 4 === 0){
-      const {data} = await sb.from('matches').select('*').eq('id', param).single();
-      if(data){ m = data; renderUI(); return; }
+      const [{data: mData}, {data: eData}] = await Promise.all([
+        sb.from('matches').select('*').eq('id', param).single(),
+        sb.from('score_events').select('*').eq('match_id', param),
+      ]);
+      if(mData) m = mData;
+      if(eData) events = eData;
+      renderUI();
+      return;
     }
     if(m.clock_state==='running'){
       const el = document.getElementById('clockDisplay');
@@ -3057,6 +3108,13 @@ async function adminLiveScoring(){
   const openTeams = openTeamsRes.data || [];
   const matches = matchesRes.data || [];
   const teamRegs = regsRes.filter(r=>r.sport_id==='basketball' && r.event_id==='team' && (r.status==='approved'||r.status==='pending'));
+  const matchIds = matches.map(m=>m.id);
+  let allMatchEvents = [];
+  if(matchIds.length){
+    const {data: evData} = await sb.from('score_events').select('*').in('match_id', matchIds);
+    allMatchEvents = evData || [];
+  }
+  const eventsForMatch = (matchId) => allMatchEvents.filter(e=>e.match_id===matchId);
 
   main.innerHTML = `
     <h3 class="h-md" style="margin-bottom:14px;">Open Category Teams</h3>
@@ -3156,15 +3214,17 @@ async function adminLiveScoring(){
     const cat = catSel.value;
     const opts = teamsForCategory(cat);
     function resolveTeam(which, sel){
+      // Rosters store just {name} now — points are never stored here at
+      // all, they're always computed live from score_events.
       if(sel.value==='__manual'){
         const name = document.getElementById('mManual'+which+'Names').value.trim();
         const playersRaw = document.getElementById('mManual'+which+'Players').value.trim();
         if(!name || !playersRaw) return null;
-        return {name, players: playersRaw.split(',').map(p=>({name:p.trim(), points:0})).filter(p=>p.name)};
+        return {name, players: playersRaw.split(',').map(p=>({name:p.trim()})).filter(p=>p.name)};
       }
       const found = opts.find(o=>String(o.id)===sel.value);
       if(!found) return null;
-      return {name: found.name, players: found.players.map(p=>({name:p.name, points:0}))};
+      return {name: found.name, players: found.players.map(p=>({name:p.name}))};
     }
     const teamA = resolveTeam('A', teamASel);
     const teamB = resolveTeam('B', teamBSel);
@@ -3202,10 +3262,11 @@ async function adminLiveScoring(){
     listHost.innerHTML = matches.map(m=>{
       const scorerLink = `#score/${m.id}.${m.scorer_token}`;
       const liveLink = `#livescore/${m.id}`;
+      const ev = eventsForMatch(m.id);
       const stateBadge = m.clock_state==='running' ? `<span class="badge green">🔴 Live</span>` : m.clock_state==='paused' ? `<span class="badge gold">Paused</span>` : m.clock_state==='ended' ? `<span class="badge maroon">Ended</span>` : `<span class="badge">Not started</span>`;
       return `<div class="card" style="padding:14px 16px;margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center;">
-          <div><strong>${esc(m.team_a_name)}</strong> ${teamTotal(m.team_a_players)} — ${teamTotal(m.team_b_players)} <strong>${esc(m.team_b_name)}</strong> &nbsp; ${stateBadge}</div>
+          <div><strong>${esc(m.team_a_name)}</strong> ${teamScoreFromEvents(ev,'A')} — ${teamScoreFromEvents(ev,'B')} <strong>${esc(m.team_b_name)}</strong> &nbsp; ${stateBadge}</div>
           <div style="display:flex;gap:8px;">
             <a href="${scorerLink}" class="btn-outline btn-sm">Open Scorer</a>
             <a href="${liveLink}" class="btn-outline btn-sm">Live View</a>
