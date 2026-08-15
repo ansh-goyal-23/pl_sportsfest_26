@@ -1031,6 +1031,31 @@ const AGE_CATEGORY_RULES = {
   '40-59': {min:40, max:59},
   '60+':  {min:60},
 };
+/* =========================================================
+   LIVE SCORING — shared helpers used by the scorer page,
+   the public live-scoreboard page, and the admin match setup.
+   ========================================================= */
+function formatClock(totalSeconds){
+  const s = Math.max(0, Math.round(totalSeconds));
+  const m = Math.floor(s/60);
+  const sec = s%60;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+// The clock's "true" remaining time is derived from a timestamp
+// (running_since) rather than ticked down purely in the browser, so it
+// stays accurate across devices, tab refreshes, and polling gaps — the
+// DB only gets written on start/pause/score events, not every second.
+function computeLiveRemaining(match){
+  if(match.clock_state === 'running' && match.running_since){
+    const elapsed = (Date.now() - new Date(match.running_since).getTime()) / 1000;
+    return Math.max(0, match.remaining_seconds - elapsed);
+  }
+  return match.remaining_seconds;
+}
+function teamTotal(players){
+  return (players||[]).reduce((sum,p)=>sum+(p.points||0), 0);
+}
+
 function ageRuleMessage(catLabel, rule){
   if(rule.min!=null && rule.max!=null) return `${catLabel} needs an age between ${rule.min} and ${rule.max}`;
   if(rule.max!=null) return `${catLabel} needs an age of ${rule.max} or under`;
@@ -1044,6 +1069,7 @@ function ageRuleMessage(catLabel, rule){
 // or close a category. CATEGORY_STATUS is fetched once when the Register
 // page loads (see renderRegister) and read synchronously here.
 let CATEGORY_STATUS = {};
+let ACTIVE_POLL_INTERVAL = null; // live-scoring pages' ticking interval — cleared on every navigation, see render()
 async function loadCategoryStatus(){
   try{
     const {data, error} = await sb.from('category_status').select('*');
@@ -1457,9 +1483,20 @@ async function renderFixtures(){
       </div>
     </div>
     <section class="wrap">
+      <div id="liveNowBanner"></div>
       <div id="fxList"><div class="loading-dots">Loading fixtures…</div></div>
     </section>
   `);
+  // Best-effort — if this fails for any reason, the page still works fine
+  // without the banner, so it's never allowed to block fixtures loading.
+  sb.from('matches').select('*', {count:'exact', head:true}).in('clock_state', ['running','paused']).then(({count})=>{
+    if(count && count>0){
+      document.getElementById('liveNowBanner').innerHTML = `
+        <a href="#livescore" class="msg-banner ok" style="display:block;margin-bottom:20px;text-decoration:none;">
+          🔴 <strong>${count} match${count>1?'es are':' is'} live right now</strong> — tap to watch the score update live →
+        </a>`;
+    }
+  }).catch(()=>{});
   const host = document.getElementById('fxList');
   const list = await tFetchAll('fixture_boards', 'sport_id', true);
   if(!list.length){
@@ -1649,6 +1686,198 @@ async function renderContact(){
     </section>
   `);
 }
+
+/* =========================================================
+   LIVE SCORING — the scorer's page and the public live view.
+   Both pages tick the countdown display locally every second
+   (see computeLiveRemaining) and store the ticking interval in
+   ACTIVE_POLL_INTERVAL so render() clears it on any navigation.
+   ========================================================= */
+
+// No admin login required — reachable only by the exact scorer link
+// (matchId + scorer_token), which is only ever handed out from Admin.
+async function renderScorer(param){
+  const [matchId, token] = (param||'').split('.');
+  const app = document.getElementById('app');
+  const errPage = (msg) => {
+    app.innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--bright);padding:20px;text-align:center;font-family:sans-serif;"><div><p>${esc(msg)}</p><a href="#home" style="color:var(--gold-light);">Return home</a></div></div>`;
+  };
+  if(!matchId || !token){ errPage('Invalid scorer link.'); return; }
+  const {data: match, error} = await sb.from('matches').select('*').eq('id', matchId).single();
+  if(error || !match || match.scorer_token !== token){ errPage('This scorer link is invalid, or the match no longer exists.'); return; }
+
+  let m = match; // this device's local working copy — the source of truth for this scoring session
+
+  function renderUI(){
+    const remaining = computeLiveRemaining(m);
+    app.innerHTML = `
+      <div style="min-height:100vh;background:var(--ink);color:var(--bright);padding:18px 14px 40px;font-family:-apple-system,sans-serif;">
+        <div style="text-align:center;margin-bottom:18px;">
+          <div style="font-size:12px;color:var(--slate);text-transform:uppercase;letter-spacing:.08em;">${esc((m.category_id||'').toUpperCase())} · Basketball · Scorer</div>
+          <div id="clockDisplay" style="font-size:52px;font-weight:800;color:${remaining<=60 && m.clock_state==='running' ? '#E85C4A':'var(--gold)'};margin:8px 0;font-family:monospace;">${formatClock(remaining)}</div>
+          <div style="display:flex;gap:10px;justify-content:center;">
+            ${m.clock_state!=='ended' ? `
+              <button id="startPauseBtn" class="btn ${m.clock_state==='running'?'btn-outline':'btn-primary'} btn-sm">${m.clock_state==='running'?'⏸ Pause':'▶ Start'}</button>
+              <button id="endMatchBtn" class="btn-outline btn-sm">End Match</button>
+            ` : `<span class="badge maroon">Match Ended</span>`}
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--cream-dim);border-radius:10px;padding:16px;margin-bottom:18px;">
+          <div style="text-align:center;flex:1;"><div style="font-size:13px;color:var(--slate);">${esc(m.team_a_name)}</div><div style="font-size:34px;font-weight:800;">${teamTotal(m.team_a_players)}</div></div>
+          <div style="color:var(--slate);font-size:13px;">VS</div>
+          <div style="text-align:center;flex:1;"><div style="font-size:13px;color:var(--slate);">${esc(m.team_b_name)}</div><div style="font-size:34px;font-weight:800;">${teamTotal(m.team_b_players)}</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          ${renderTeamCol('A', m.team_a_name, m.team_a_players)}
+          ${renderTeamCol('B', m.team_b_name, m.team_b_players)}
+        </div>
+      </div>
+    `;
+    wireEvents();
+  }
+
+  function renderTeamCol(side, name, players){
+    return `<div>
+      <div style="font-size:13px;color:var(--slate);margin-bottom:8px;text-align:center;">${esc(name)}</div>
+      ${(players||[]).map((p,i)=>`
+        <div style="background:var(--cream-dim);border-radius:8px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:13px;">${esc(p.name)}</span>
+            <span style="font-size:19px;font-weight:800;color:var(--gold);">${p.points||0}</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            ${[1,2,3].map(pts=>`<button class="scoreBtn" data-side="${side}" data-idx="${i}" data-pts="${pts}" style="flex:1;padding:10px 0;background:#1E2A38;color:var(--bright);border:none;border-radius:6px;font-weight:800;font-size:15px;">+${pts}</button>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  async function persist(patch){
+    m = {...m, ...patch};
+    await sb.from('matches').update({...patch, updated_at:new Date().toISOString()}).eq('id', m.id);
+  }
+
+  function wireEvents(){
+    document.querySelectorAll('.scoreBtn').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const side = btn.dataset.side, idx = Number(btn.dataset.idx), pts = Number(btn.dataset.pts);
+        const key = side==='A' ? 'team_a_players' : 'team_b_players';
+        const players = m[key].map((p,i)=> i===idx ? {...p, points:(p.points||0)+pts} : p);
+        await persist({[key]: players});
+        renderUI();
+      });
+    });
+    const startPauseBtn = document.getElementById('startPauseBtn');
+    if(startPauseBtn){
+      startPauseBtn.addEventListener('click', async ()=>{
+        if(m.clock_state==='running'){
+          const remaining = computeLiveRemaining(m);
+          await persist({clock_state:'paused', remaining_seconds: Math.round(remaining), running_since: null});
+        }else{
+          await persist({clock_state:'running', running_since: new Date().toISOString()});
+        }
+        renderUI();
+      });
+    }
+    const endBtn = document.getElementById('endMatchBtn');
+    if(endBtn){
+      endBtn.addEventListener('click', async ()=>{
+        if(!confirm('End this match? The clock will stop.')) return;
+        const remaining = computeLiveRemaining(m);
+        await persist({clock_state:'ended', remaining_seconds: Math.round(remaining), running_since: null});
+        renderUI();
+      });
+    }
+  }
+
+  renderUI();
+  // Ticks the displayed clock every second when running — a single
+  // interval, cleared automatically by render() on any navigation.
+  ACTIVE_POLL_INTERVAL = setInterval(()=>{
+    if(m.clock_state==='running'){
+      const el = document.getElementById('clockDisplay');
+      if(el) el.textContent = formatClock(computeLiveRemaining(m));
+    }
+  }, 1000);
+}
+
+// Public, read-only. No param = list of every currently in-progress
+// match; a matchId = that one match's live scoreboard.
+async function renderLiveScore(param){
+  if(!param){
+    const {data} = await sb.from('matches').select('*').in('clock_state', ['running','paused']).order('created_at', {ascending:false});
+    renderShell(`
+      <div class="detail-band">
+        <div class="wrap">
+          <div class="eyebrow" style="color:var(--gold-light)">Live</div>
+          <h1 class="h-lg" style="color:var(--bright)">🔴 Live Scores</h1>
+        </div>
+      </div>
+      <section class="wrap">
+        ${!data || !data.length ? `<div class="empty-state"><div class="em-icon">🏀</div><p>No matches are live right now — check back during Basketball match times!</p></div>` : `
+          <div class="grid grid-2">
+            ${data.map(m=>`
+              <a href="#livescore/${m.id}" class="card sport-card" style="text-decoration:none;color:inherit;padding:20px;">
+                <span class="badge ${m.clock_state==='running'?'green':'gold'}">${esc((m.category_id||'').toUpperCase())} · ${m.clock_state==='running'?'🔴 Live':'⏸ Paused'}</span>
+                <h3 style="margin-top:10px;font-size:18px;">${esc(m.team_a_name)} ${teamTotal(m.team_a_players)} — ${teamTotal(m.team_b_players)} ${esc(m.team_b_name)}</h3>
+                <p style="margin-top:8px;color:var(--slate);">${formatClock(computeLiveRemaining(m))} remaining</p>
+              </a>`).join('')}
+          </div>
+        `}
+      </section>
+    `);
+    return;
+  }
+
+  const {data: match, error} = await sb.from('matches').select('*').eq('id', param).single();
+  if(error || !match){
+    renderShell(`<section class="wrap" style="padding:60px 0;text-align:center;"><h2 class="h-md">Match not found.</h2><a href="#livescore" style="color:var(--maroon);">← Back to live scores</a></section>`);
+    return;
+  }
+  let m = match;
+
+  renderShell(`
+    <div class="detail-band"><div class="wrap"><div class="eyebrow" style="color:var(--gold-light)">Live</div><h1 class="h-lg" style="color:var(--bright)">Live Score</h1></div></div>
+    <section class="wrap" id="liveScoreHost"></section>
+  `);
+
+  function renderUI(){
+    document.getElementById('liveScoreHost').innerHTML = `
+      <div style="text-align:center;margin-bottom:20px;">
+        <div class="eyebrow" style="color:var(--gold-light)">${esc((m.category_id||'').toUpperCase())} · Basketball</div>
+        <div id="clockDisplay" style="font-size:46px;font-weight:800;color:var(--gold);margin:10px 0;font-family:monospace;">${formatClock(computeLiveRemaining(m))}</div>
+        <span class="badge ${m.clock_state==='running'?'green':(m.clock_state==='ended'?'maroon':'gold')}">${m.clock_state==='running'?'🔴 Live':m.clock_state==='ended'?'Match Ended':m.clock_state==='paused'?'⏸ Paused':'Not Started'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--cream-dim);border-radius:10px;padding:18px;margin-bottom:24px;">
+        <div style="text-align:center;flex:1;"><div style="font-size:14px;color:var(--slate);">${esc(m.team_a_name)}</div><div style="font-size:38px;font-weight:800;">${teamTotal(m.team_a_players)}</div></div>
+        <div style="color:var(--slate);">VS</div>
+        <div style="text-align:center;flex:1;"><div style="font-size:14px;color:var(--slate);">${esc(m.team_b_name)}</div><div style="font-size:38px;font-weight:800;">${teamTotal(m.team_b_players)}</div></div>
+      </div>
+      <div class="grid grid-2">
+        <div><h4 style="margin-bottom:10px;">${esc(m.team_a_name)}</h4>${(m.team_a_players||[]).map(p=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);"><span>${esc(p.name)}</span><strong>${p.points||0}</strong></div>`).join('')}</div>
+        <div><h4 style="margin-bottom:10px;">${esc(m.team_b_name)}</h4>${(m.team_b_players||[]).map(p=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);"><span>${esc(p.name)}</span><strong>${p.points||0}</strong></div>`).join('')}</div>
+      </div>
+    `;
+  }
+  renderUI();
+
+  // One combined interval: ticks the clock display every second, and
+  // re-fetches the match from the database every 4th tick to pick up
+  // the scorer's latest updates. Cleared automatically by render().
+  let tickCount = 0;
+  ACTIVE_POLL_INTERVAL = setInterval(async ()=>{
+    tickCount++;
+    if(tickCount % 4 === 0){
+      const {data} = await sb.from('matches').select('*').eq('id', param).single();
+      if(data){ m = data; renderUI(); return; }
+    }
+    if(m.clock_state==='running'){
+      const el = document.getElementById('clockDisplay');
+      if(el) el.textContent = formatClock(computeLiveRemaining(m));
+    }
+  }, 1000);
+}
+
 </script>
 <script>
 /* =========================================================
@@ -2326,6 +2555,7 @@ async function renderAdmin(){
 const ADMIN_SECTIONS = [
   {id:'registrations', label:'Registrations'},
   {id:'regstatus', label:'Registration Status'},
+  {id:'livescoring', label:'Live Scoring'},
   {id:'analytics', label:'Site Analytics'},
   {id:'updates', label:'Updates & Announcements'},
   {id:'fixtures', label:'Fixtures & Results'},
@@ -2367,6 +2597,7 @@ async function loadAdminSection(){
   const map = {
     registrations: adminRegistrations,
     regstatus: adminRegistrationStatus,
+    livescoring: adminLiveScoring,
     analytics: adminAnalytics,
     updates: adminUpdates,
     fixtures: adminFixtures,
@@ -2834,6 +3065,187 @@ async function adminRegistrationStatus(){
       if(ok){ toast('Schedule cleared', 'info'); adminRegistrationStatus(); }
     });
   });
+}
+
+/* ---------- Admin: Live Scoring ---------- */
+async function adminLiveScoring(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `<div class="loading-dots">Loading…</div>`;
+
+  const [openTeamsRes, matchesRes, regsRes] = await Promise.all([
+    sb.from('open_category_teams').select('*').order('created_at', {ascending:false}),
+    sb.from('matches').select('*').order('created_at', {ascending:false}),
+    tFetchAll('registrations', 'submitted_at', false),
+  ]);
+  const openTeams = openTeamsRes.data || [];
+  const matches = matchesRes.data || [];
+  const teamRegs = regsRes.filter(r=>r.sport_id==='basketball' && r.event_id==='team' && (r.status==='approved'||r.status==='pending'));
+
+  main.innerHTML = `
+    <h3 class="h-md" style="margin-bottom:14px;">Open Category Teams</h3>
+    <p class="hint" style="margin-bottom:16px;">Enter the finalised auction teams here once — they'll then be available to pick from when setting up an Open category match below.</p>
+    <div class="form-card" style="max-width:560px;padding:20px;margin-bottom:16px;">
+      <div class="field"><label>Team Name</label><input type="text" id="otTeamName" placeholder="e.g. Team Thunder"></div>
+      <div class="field"><label>Players (comma-separated)</label><input type="text" id="otPlayers" placeholder="Saras, Arsh, Apar"></div>
+      <button class="btn btn-primary btn-sm" id="otAddBtn">Add Team</button>
+    </div>
+    <div id="otList" style="margin-bottom:36px;"></div>
+
+    <h3 class="h-md" style="margin-bottom:14px;">Create a Match</h3>
+    <div class="form-card" style="max-width:640px;padding:20px;margin-bottom:16px;">
+      <div class="field">
+        <label>Category</label>
+        <select id="mCategory">
+          <option value="u10">U10</option>
+          <option value="u14">U14</option>
+          <option value="open">Open</option>
+        </select>
+      </div>
+      <div class="form-grid-2">
+        <div class="field"><label>Team A</label><select id="mTeamA"></select></div>
+        <div class="field"><label>Team B</label><select id="mTeamB"></select></div>
+      </div>
+      <div id="mManualA" style="display:none;" class="field"><label>Team A — name &amp; players (manual)</label>
+        <input type="text" id="mManualANames" placeholder="Team name" style="margin-bottom:8px;">
+        <input type="text" id="mManualAPlayers" placeholder="Player1, Player2, Player3">
+      </div>
+      <div id="mManualB" style="display:none;" class="field"><label>Team B — name &amp; players (manual)</label>
+        <input type="text" id="mManualBNames" placeholder="Team name" style="margin-bottom:8px;">
+        <input type="text" id="mManualBPlayers" placeholder="Player1, Player2, Player3">
+      </div>
+      <div class="field"><label>Match Duration (minutes)</label><input type="number" id="mDuration" value="20" min="1" style="max-width:120px;"></div>
+      <button class="btn btn-primary btn-sm" id="mCreateBtn">Create Match</button>
+      <div id="mCreateResult"></div>
+    </div>
+
+    <h3 class="h-md" style="margin-bottom:14px;">Matches</h3>
+    <div id="matchList"></div>
+  `;
+
+  // ---- Open Teams: render + add + delete ----
+  function renderOpenTeams(){
+    const host = document.getElementById('otList');
+    if(!openTeams.length){ host.innerHTML = `<p class="hint">No Open teams entered yet.</p>`; return; }
+    host.innerHTML = openTeams.map(t=>`
+      <div class="card" style="padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div><strong>${esc(t.team_name)}</strong> — <span class="hint" style="margin:0;">${(t.players||[]).map(p=>esc(p.name||p)).join(', ')}</span></div>
+        <button class="btn-del" data-del-ot="${t.id}">Delete</button>
+      </div>`).join('');
+    host.querySelectorAll('[data-del-ot]').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        if(!confirm('Delete this Open team?')) return;
+        await sb.from('open_category_teams').delete().eq('id', el.dataset.delOt);
+        toast('Deleted', 'info'); adminLiveScoring();
+      });
+    });
+  }
+  renderOpenTeams();
+
+  document.getElementById('otAddBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('otTeamName').value.trim();
+    const playersRaw = document.getElementById('otPlayers').value.trim();
+    if(!name || !playersRaw){ toast('Fill in both fields', 'err'); return; }
+    const players = playersRaw.split(',').map(p=>({name:p.trim()})).filter(p=>p.name);
+    const {error} = await sb.from('open_category_teams').insert({team_name:name, players});
+    if(error){ toast('Could not save — try again', 'err'); return; }
+    toast('Team added', 'ok'); adminLiveScoring();
+  });
+
+  // ---- Create Match: category-dependent team pickers ----
+  const catSel = document.getElementById('mCategory');
+  const teamASel = document.getElementById('mTeamA');
+  const teamBSel = document.getElementById('mTeamB');
+  function teamsForCategory(cat){
+    if(cat==='open') return openTeams.map(t=>({id:t.id, label:t.team_name, name:t.team_name, players:t.players}));
+    return teamRegs.filter(r=>r.category_id===cat).map(r=>({id:r.id, label:`${r.team_name||'(unnamed team)'} — ${r.flat}`, name:r.team_name||'Team', players:(r.participants||[]).map(p=>({name:p.name}))}));
+  }
+  function rebuildTeamSelects(){
+    const opts = teamsForCategory(catSel.value);
+    const optsHtml = opts.map(o=>`<option value="${o.id}">${esc(o.label)}</option>`).join('') + `<option value="__manual">✏️ Manual entry…</option>`;
+    teamASel.innerHTML = optsHtml;
+    teamBSel.innerHTML = optsHtml;
+    toggleManual('A'); toggleManual('B');
+  }
+  function toggleManual(which){
+    const sel = which==='A' ? teamASel : teamBSel;
+    document.getElementById('mManual'+which).style.display = sel.value==='__manual' ? 'block' : 'none';
+  }
+  catSel.addEventListener('change', rebuildTeamSelects);
+  teamASel.addEventListener('change', ()=>toggleManual('A'));
+  teamBSel.addEventListener('change', ()=>toggleManual('B'));
+  rebuildTeamSelects();
+
+  document.getElementById('mCreateBtn').addEventListener('click', async ()=>{
+    const cat = catSel.value;
+    const opts = teamsForCategory(cat);
+    function resolveTeam(which, sel){
+      if(sel.value==='__manual'){
+        const name = document.getElementById('mManual'+which+'Names').value.trim();
+        const playersRaw = document.getElementById('mManual'+which+'Players').value.trim();
+        if(!name || !playersRaw) return null;
+        return {name, players: playersRaw.split(',').map(p=>({name:p.trim(), points:0})).filter(p=>p.name)};
+      }
+      const found = opts.find(o=>String(o.id)===sel.value);
+      if(!found) return null;
+      return {name: found.name, players: found.players.map(p=>({name:p.name, points:0}))};
+    }
+    const teamA = resolveTeam('A', teamASel);
+    const teamB = resolveTeam('B', teamBSel);
+    const durationMin = Number(document.getElementById('mDuration').value) || 20;
+    if(!teamA || !teamB){ toast('Pick or fill in both teams', 'err'); return; }
+    const durationSeconds = durationMin*60;
+    const {data, error} = await sb.from('matches').insert({
+      sport_id:'basketball', category_id: cat,
+      team_a_name: teamA.name, team_b_name: teamB.name,
+      team_a_players: teamA.players, team_b_players: teamB.players,
+      duration_seconds: durationSeconds, remaining_seconds: durationSeconds,
+    }).select().single();
+    if(error){ toast('Could not create match — try again', 'err'); console.error(error); return; }
+    const scorerLink = `${location.origin}${location.pathname}#score/${data.id}.${data.scorer_token}`;
+    const liveLink = `${location.origin}${location.pathname}#livescore/${data.id}`;
+    document.getElementById('mCreateResult').innerHTML = `
+      <div class="msg-banner ok" style="margin-top:14px;">
+        <p><strong>Match created!</strong> Share the scorer link with whoever's scoring courtside:</p>
+        <p class="mono" style="font-size:12px;word-break:break-all;margin-top:8px;">${scorerLink}</p>
+        <button class="btn-outline btn-sm" style="margin-top:6px;" data-copy="${scorerLink}">Copy Scorer Link</button>
+        <p style="margin-top:12px;">Public live view (no login, read-only):</p>
+        <p class="mono" style="font-size:12px;word-break:break-all;margin-top:8px;">${liveLink}</p>
+        <button class="btn-outline btn-sm" style="margin-top:6px;" data-copy="${liveLink}">Copy Live Link</button>
+      </div>`;
+    document.getElementById('mCreateResult').querySelectorAll('[data-copy]').forEach(el=>{
+      el.addEventListener('click', ()=>{ navigator.clipboard.writeText(el.dataset.copy); toast('Copied', 'ok'); });
+    });
+    toast('Match created', 'ok');
+  });
+
+  // ---- Match list ----
+  const listHost = document.getElementById('matchList');
+  if(!matches.length){ listHost.innerHTML = `<p class="hint">No matches created yet.</p>`; }
+  else{
+    listHost.innerHTML = matches.map(m=>{
+      const scorerLink = `#score/${m.id}.${m.scorer_token}`;
+      const liveLink = `#livescore/${m.id}`;
+      const stateBadge = m.clock_state==='running' ? `<span class="badge green">🔴 Live</span>` : m.clock_state==='paused' ? `<span class="badge gold">Paused</span>` : m.clock_state==='ended' ? `<span class="badge maroon">Ended</span>` : `<span class="badge">Not started</span>`;
+      return `<div class="card" style="padding:14px 16px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center;">
+          <div><strong>${esc(m.team_a_name)}</strong> ${teamTotal(m.team_a_players)} — ${teamTotal(m.team_b_players)} <strong>${esc(m.team_b_name)}</strong> &nbsp; ${stateBadge}</div>
+          <div style="display:flex;gap:8px;">
+            <a href="${scorerLink}" class="btn-outline btn-sm">Open Scorer</a>
+            <a href="${liveLink}" class="btn-outline btn-sm">Live View</a>
+            <button class="btn-del" data-del-match="${m.id}">Delete</button>
+          </div>
+        </div>
+        <p class="hint" style="margin-top:6px;">${esc((m.category_id||'').toUpperCase())} · created ${fmtDateTime(m.created_at)}</p>
+      </div>`;
+    }).join('');
+    listHost.querySelectorAll('[data-del-match]').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        if(!confirm('Delete this match? This cannot be undone.')) return;
+        await sb.from('matches').delete().eq('id', el.dataset.delMatch);
+        toast('Match deleted', 'info'); adminLiveScoring();
+      });
+    });
+  }
 }
 
 /* ---------- Admin: Site Analytics ---------- */
@@ -3312,6 +3724,10 @@ async function adminSettings(){
    MAIN ROUTER
    ========================================================= */
 async function render(){
+  // Any page can start a ticking interval (the live scoring pages do, for
+  // the countdown clock) — clear it here on every navigation so it can
+  // never keep running silently in the background after leaving the page.
+  if(ACTIVE_POLL_INTERVAL){ clearInterval(ACTIVE_POLL_INTERVAL); ACTIVE_POLL_INTERVAL = null; }
   if(!CONFIG_READY){
     document.getElementById('app').innerHTML = `
       <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--cream);padding:40px 20px;">
@@ -3344,6 +3760,8 @@ async function render(){
       case 'sponsors': await renderSponsors(); break;
       case 'contact': await renderContact(); break;
       case 'register': await renderRegister(param); break;
+      case 'score': await renderScorer(param); break;
+      case 'livescore': await renderLiveScore(param); break;
       case 'admin': await renderAdmin(); break;
       default: await renderHome();
     }
