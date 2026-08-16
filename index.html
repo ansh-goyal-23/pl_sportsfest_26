@@ -456,11 +456,28 @@ async function uploadImage(bucket, file, prefix, opts){
   // a 400 even though the RLS policies and bucket are correct — most likely
   // a regression in whatever @supabase/supabase-js@2 patch version the CDN
   // is now serving, since the version isn't pinned. Deleting first and then
-  // doing a plain upload sidesteps the upsert flag entirely, so it isn't
-  // exposed to that bug. The delete is expected to fail harmlessly the
-  // first time a path is ever used (nothing there yet to delete).
+  // doing a plain upload sidesteps the upsert flag entirely.
+  //
+  // That in turn surfaced a second issue: the delete can report success
+  // before it's actually finished propagating on Supabase's end, so an
+  // upload that follows immediately can come back "KeyAlreadyExists" even
+  // though the file was technically just removed. A couple of short-delay
+  // retries (re-issuing the delete each time, in case it also needs to
+  // catch up) absorbs that race without reintroducing the upsert bug.
   if(opts && opts.upsert){
     await sb.storage.from(bucket).remove([path]).catch(()=>{});
+    for(let attempt=0; attempt<3; attempt++){
+      const {error} = await sb.storage.from(bucket).upload(path, blob, {contentType:'image/jpeg'});
+      if(!error) return path;
+      if(attempt<2){
+        await new Promise(r=>setTimeout(r, 400));
+        await sb.storage.from(bucket).remove([path]).catch(()=>{});
+      }else{
+        console.error('upload failed', error);
+        return null;
+      }
+    }
+    return null;
   }
   const {error} = await sb.storage.from(bucket).upload(path, blob, {contentType:'image/jpeg'});
   if(error){ console.error('upload failed', error); return null; }
@@ -699,7 +716,7 @@ const SPORTS = [
   id:'lawn-tennis', name:'Lawn Tennis', short:'Singles & Doubles', icon:'🎾',
   poc:[{name:'Raj',phone:'9818361556'}],
   fixtureGenders:['male','female','mixed'],
-  dateLabel:'16 Aug', venue:"Society's Lawn Tennis Court", feeLabel:'U14 ₹100 singles, ₹200/team doubles · Open ₹200 singles, ₹400 doubles',
+  dateLabel:'22 Aug', venue:"Society's Lawn Tennis Court", feeLabel:'U14 ₹100 singles, ₹200/team doubles · Open ₹200 singles, ₹400 doubles',
   tagline:"Men's & Women's Singles and Doubles for Under-14 and Open, plus Open Mixed Doubles.",
   registration:{
     mode:'form',
@@ -1286,7 +1303,8 @@ async function renderTicker(){
 const TIMELINE = [
   {date:'15 Aug', title:'Freedom Run — 5K', desc:"5:45 AM start from the Back Gate, route via Backside, Amrapali and CNG to the Society's Central Park."},
   {date:'15 Aug', title:'Flag Hoisting + Field Games', desc:"50m Race, Relay Race and Long Jump for kids at the Central Park, plus on-spot challenges for everyone."},
-  {date:'16 Aug', title:'Basketball & Lawn Tennis', desc:"3+1 Basketball at the Basketball Court and Lawn Tennis at the Lawn Tennis Court — both begin today."},
+  {date:'16 Aug', title:'Basketball', desc:"3+1 Basketball begins today at the Basketball Court."},
+  {date:'22 Aug', title:'Lawn Tennis', desc:"Singles & Doubles begin today at the Lawn Tennis Court."},
   {date:'22–23 Aug', title:'Clubhouse Games', desc:'Table Tennis, Chess, Carrom and Pool all run through the Clubhouse.'},
   {date:'29 Aug · Morning & Evening', title:'Football', desc:'Auction-format football at the Football Ground.'},
   {date:'22–24 Aug', title:'Badminton', desc:'Singles & Doubles across five age categories at the Badminton Court.'},
