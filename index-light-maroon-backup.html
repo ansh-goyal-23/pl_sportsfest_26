@@ -430,28 +430,23 @@ async function uploadImage(bucket, file, prefix, opts){
   // the client library's upsert:true option, but that started failing with
   // a 400 even though the RLS policies and bucket are correct — most likely
   // a regression in whatever @supabase/supabase-js@2 patch version the CDN
-  // is now serving, since the version isn't pinned. Deleting first and then
-  // doing a plain upload sidesteps the upsert flag entirely.
+  // is now serving, since the version isn't pinned.
   //
-  // That in turn surfaced a second issue: the delete can report success
-  // before it's actually finished propagating on Supabase's end, so an
-  // upload that follows immediately can come back "KeyAlreadyExists" even
-  // though the file was technically just removed. A couple of short-delay
-  // retries (re-issuing the delete each time, in case it also needs to
-  // catch up) absorbs that race without reintroducing the upsert bug.
+  // A delete-then-insert workaround was tried next, but that ran into a
+  // second problem: a delete can report success before Supabase has
+  // actually finished removing the file, so an insert right behind it can
+  // still collide ("KeyAlreadyExists") even with retries. The reliable
+  // fix is to stop trying to force a fresh insert at all — try a normal
+  // upload first (the common case: nothing at this path yet), and if
+  // something's already there, call update() instead, which replaces a
+  // file in place and was built for exactly this case, sidestepping the
+  // conflict entirely rather than racing against it.
   if(opts && opts.upsert){
-    await sb.storage.from(bucket).remove([path]).catch(()=>{});
-    for(let attempt=0; attempt<3; attempt++){
-      const {error} = await sb.storage.from(bucket).upload(path, blob, {contentType:'image/jpeg'});
-      if(!error) return path;
-      if(attempt<2){
-        await new Promise(r=>setTimeout(r, 400));
-        await sb.storage.from(bucket).remove([path]).catch(()=>{});
-      }else{
-        console.error('upload failed', error);
-        return null;
-      }
-    }
+    const insertResult = await sb.storage.from(bucket).upload(path, blob, {contentType:'image/jpeg'});
+    if(!insertResult.error) return path;
+    const updateResult = await sb.storage.from(bucket).update(path, blob, {contentType:'image/jpeg'});
+    if(!updateResult.error) return path;
+    console.error('upload failed', insertResult.error, updateResult.error);
     return null;
   }
   const {error} = await sb.storage.from(bucket).upload(path, blob, {contentType:'image/jpeg'});
