@@ -686,20 +686,26 @@ const SPORTS = [
   id:'lawn-tennis', name:'Lawn Tennis', short:'Singles & Doubles', icon:'🎾',
   poc:[{name:'Raj',phone:'9818361556'}],
   fixtureGenders:['male','female','mixed'],
-  dateLabel:'22 Aug', venue:"Society's Lawn Tennis Court", feeLabel:'U14 ₹100 singles, ₹200/team doubles · Open ₹200 singles, ₹400 doubles',
-  tagline:"Men's & Women's Singles and Doubles for Under-14 and Open, plus Open Mixed Doubles.",
+  dateLabel:'22 Aug', venue:"Society's Lawn Tennis Court", feeLabel:'U8/U10/U14 ₹100 singles, ₹200/team doubles · Open ₹200 singles, ₹400 doubles',
+  tagline:"Men's & Women's Singles and Doubles for U8, U10, U14 and Open, plus Open Mixed Doubles.",
   registration:{
     mode:'form',
-    categories:[{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
+    categories:[{id:'tennis-u8',label:'U8'},{id:'tennis-u10',label:'U10'},{id:'u14',label:'Under 14'},{id:'open',label:'Open'}],
     events:[
       {id:'singles', label:"Singles — Men's / Women's", teamSize:1, genderRule:'choose'},
       {id:'doubles', label:'Doubles', teamSize:2, genderRule:'chooseOrMixed', mixedCategories:['open']}
     ],
-    eventsByCategory: { 'u14': ['singles','doubles'], 'open': ['singles','doubles'] }
+    eventsByCategory: { 'tennis-u8': ['singles','doubles'], 'tennis-u10': ['singles','doubles'], 'u14': ['singles','doubles'], 'open': ['singles','doubles'] }
   },
   rulesHtml:`
     <h4>Categories &amp; events</h4>
     <table><tr><th>Category</th><th>Event</th></tr>
+    <tr><td>U8 (age 6–8)</td><td>Men's Singles</td></tr>
+    <tr><td>U8 (age 6–8)</td><td>Women's Singles</td></tr>
+    <tr><td>U8 (age 6–8)</td><td>Doubles</td></tr>
+    <tr><td>U10 (age 9–10)</td><td>Men's Singles</td></tr>
+    <tr><td>U10 (age 9–10)</td><td>Women's Singles</td></tr>
+    <tr><td>U10 (age 9–10)</td><td>Doubles</td></tr>
     <tr><td>Under 14</td><td>Men's Singles</td></tr>
     <tr><td>Under 14</td><td>Women's Singles</td></tr>
     <tr><td>Under 14</td><td>Doubles</td></tr>
@@ -707,9 +713,11 @@ const SPORTS = [
     <tr><td>Open</td><td>Women's Singles</td></tr>
     <tr><td>Open</td><td>Doubles — Mixed Doubles allowed</td></tr></table>
     <h4>Registration fees</h4>
-    <ul><li>Under 14 Singles: ₹100 per person</li><li>Under 14 Doubles: ₹200 per team</li><li>Open Singles: ₹200 per person</li><li>Open Doubles: ₹400 per team</li></ul>
+    <ul><li>U8 Singles: ₹100 per person</li><li>U8 Doubles: ₹200 per team</li><li>U10 Singles: ₹100 per person</li><li>U10 Doubles: ₹200 per team</li><li>Under 14 Singles: ₹100 per person</li><li>Under 14 Doubles: ₹200 per team</li><li>Open Singles: ₹200 per person</li><li>Open Doubles: ₹400 per team</li></ul>
     <h4>Registration</h4>
     <ul>
+      <li>U8 (age 6–8) and U10 (age 9–10) Singles: individual registration, both players eligible for the category</li>
+      <li>U8 and U10 Doubles: 2 players per team, both eligible for the category</li>
       <li>Under 14 Singles: individual registration, both eligible for Under 14</li>
       <li>Under 14 Doubles: 2 players per team, both eligible for Under 14</li>
       <li>Open Men's / Women's Singles: individual registration</li>
@@ -959,6 +967,8 @@ const CATEGORY_FEE_RATE = {
   'open': 200,
   '40-59': 200,
   '60+':  0,
+  'tennis-u8':  100,
+  'tennis-u10': 100,
 };
 function computeFee(ev, catId){
   if(ev.feeType === 'flat') return ev.fee;
@@ -1038,6 +1048,8 @@ const AGE_CATEGORY_RULES = {
   '7-10': {min:7, max:10},
   '40-59': {min:40, max:59},
   '60+':  {min:60},
+  'tennis-u8':  {min:6, max:8},
+  'tennis-u10': {min:9, max:10},
 };
 /* =========================================================
    LIVE SCORING — shared helpers used by the scorer page,
