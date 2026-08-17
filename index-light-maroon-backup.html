@@ -2388,7 +2388,7 @@ async function submitRegistration(sportId){
 // Saves the finished row to Supabase and updates the form's message area.
 // Returns true on success so callers (e.g. the payment modal) know whether
 // to close themselves.
-async function finalizeRegistration(row, msgArea, isFree){
+async function finalizeRegistration(row, msgArea, isFree, uploadIssues){
   const btn = document.getElementById('regSubmitBtn');
   if(btn){ btn.disabled = true; btn.textContent = 'Submitting…'; }
   const {ok} = await tInsert('registrations', row);
@@ -2400,7 +2400,28 @@ async function finalizeRegistration(row, msgArea, isFree){
   // Fired just after navigating so it lands on the Home page instead of
   // being wiped out along with the registration form it started on.
   setTimeout(()=>{
-    toast(isFree ? `You're in! Player ID: ${row.player_id} — save this for event day.` : 'Registration submitted — organisers will verify your payment shortly.', 'ok');
+    if(uploadIssues && (uploadIssues.screenshotFailed || uploadIssues.playerPhotoFailed)){
+      // The registration itself is safely saved even when a screenshot or
+      // photo upload fails (a flaky connection must never cost someone
+      // their spot) — but organisers still need that proof, so this gets
+      // a modal rather than an easy-to-miss toast, with a direct way to
+      // send it over WhatsApp instead.
+      const missing = [
+        uploadIssues.screenshotFailed ? 'payment screenshot' : null,
+        uploadIssues.playerPhotoFailed ? 'player photo' : null,
+      ].filter(Boolean).join(' and ');
+      openModal(`
+        <button class="close-x" id="modalClose">✕</button>
+        <h3 style="font-size:18px;">✅ Registration Saved</h3>
+        <p style="margin-top:10px;">Your registration went through! However, we couldn't upload your ${missing} due to a connection issue on our end.</p>
+        <p style="margin-top:10px;">Please send it directly to our tech support so we can attach it to your registration:</p>
+        <p style="margin-top:12px;">
+          <a href="https://wa.me/91${TECH_CONTACT.phone}" target="_blank" class="mono" style="color:var(--green);font-size:14px;display:block;">💬 WhatsApp ${TECH_CONTACT.name}</a>
+        </p>
+      `);
+    }else{
+      toast(isFree ? `You're in! Player ID: ${row.player_id} — save this for event day.` : 'Registration submitted — organisers will verify your payment shortly.', 'ok');
+    }
   }, 150);
   return true;
 }
@@ -2468,23 +2489,24 @@ function openPaymentModal(s, feeAmount, baseRow, msgArea){
     if(!modalFile){ modalMsg.innerHTML = `<div class="msg-banner err">Please upload your payment screenshot first.</div>`; return; }
     const confirmBtn = document.getElementById('modalConfirmBtn');
     confirmBtn.disabled = true; confirmBtn.textContent = 'Submitting…';
+
+    // An upload failing here (flaky connection, storage hiccup) must never
+    // cost someone their registration — so a failure no longer blocks
+    // submission. The row still saves with that field left blank, and
+    // finalizeRegistration shows the person a clear follow-up message
+    // asking them to send proof directly to the organisers instead.
     const screenshotPath = await uploadImage('payment-screenshots', modalFile, baseRow.sport_id);
-    if(!screenshotPath){
-      confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Submit Registration';
-      modalMsg.innerHTML = `<div class="msg-banner err">Couldn't upload your screenshot — please check your connection and try again.</div>`;
-      return;
-    }
+    const screenshotFailed = !screenshotPath;
+
     let playerPhotoPath = null;
+    let playerPhotoFailed = false;
     if(baseRow.auction_info){
       playerPhotoPath = await uploadImage('player-photos', REG_AUCTION_PHOTO_FILE, baseRow.sport_id);
-      if(!playerPhotoPath){
-        confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Submit Registration';
-        modalMsg.innerHTML = `<div class="msg-banner err">Couldn't upload your player photo — please check your connection and try again.</div>`;
-        return;
-      }
+      playerPhotoFailed = !playerPhotoPath;
     }
+
     const row = {...baseRow, screenshot_path: screenshotPath, player_photo_path: playerPhotoPath, status:'pending', player_id: null};
-    const ok = await finalizeRegistration(row, msgArea, false);
+    const ok = await finalizeRegistration(row, msgArea, false, {screenshotFailed, playerPhotoFailed});
     if(ok){
       saved = true;
       bd.remove();
@@ -2933,6 +2955,7 @@ async function adminRegistrations(){
         <span class="badge ${r.status==='approved'?'green':(r.status==='rejected'?'maroon':'gold')}">${r.status}</span>
       </div>
       ${r.screenshot_path ? `<div style="margin-top:10px;"><span class="thumb-link" data-view-shot="${r.id}">📎 View payment screenshot</span></div>` : ''}
+      ${!r.screenshot_path && r.fee>0 ? `<div class="msg-banner err" style="margin-top:10px;padding:8px 12px;font-size:12px;">⚠️ No payment screenshot on file — their upload likely failed. Verify payment with them directly before approving.</div>` : ''}
       ${r.player_photo_path ? `<div style="margin-top:6px;"><span class="thumb-link" data-view-player-photo="${r.id}">🏀 View player photo</span></div>` : ''}
       ${r.auction_info ? `<div style="margin-top:10px;font-size:12.5px;color:#5a5148;background:var(--cream-dim);padding:10px 12px;border-left:3px solid var(--gold);">
         <strong style="color:var(--ink);">Position:</strong> ${esc(r.auction_info.position)}<br>
