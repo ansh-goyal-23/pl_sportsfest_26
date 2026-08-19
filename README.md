@@ -20,8 +20,10 @@ created a **project** yet, do that first at supabase.com → New Project
 1. **Run the schema.**
    In your Supabase project, open **SQL Editor → New query**, paste in
    the entire contents of `supabase-schema.sql` (included alongside this
-   file), and click **Run**. This creates all six tables, the security
-   rules, the phone-lookup function, and the three storage buckets.
+   file), and click **Run**. This creates all twelve tables, the security
+   rules, the phone-lookup function, and the six storage buckets. It's
+   safe to re-run at any point — every statement is written to skip
+   anything that already exists rather than error out.
 
 2. **Turn off public sign-up.**
    Go to **Authentication → Sign In / Providers** (or **Authentication →
@@ -62,8 +64,10 @@ A.4, save the file. That's the only edit required.
 
 Optional: once the site is live, log into **Organiser Login** →
 **Settings** and enter your UPI ID there instead of hardcoding it — this
-is what generates the live payment QR codes on the registration form, and
-you can change it any time without touching the code.
+is what generates the live payment QR code on the registration form, and
+you can change it any time without touching the code. You can also
+upload an actual bank-issued QR image there instead of using the
+generated one, if that proves more reliable for your bank/UPI app.
 
 ---
 
@@ -104,16 +108,28 @@ shows you there.
 |---|---|
 | Site pages (Home, Sports, Register, etc.) | `index.html`, served by Render |
 | Registrations, updates, fixtures, sponsors, photos | Supabase database tables |
+| Fixtures boards, per sport/category/event/gender | `fixture_boards` table + Supabase Storage (public) |
 | Payment screenshots | Supabase Storage (`payment-screenshots` bucket, private) |
+| Player photos (Basketball Open auction) | Supabase Storage (`player-photos` bucket, private) |
 | Sponsor logos & event photos | Supabase Storage (public buckets) |
 | Organiser login | Supabase Auth (email + password, no public sign-up) |
-| Payment QR code | Generated live in the browser from the UPI ID you set in Admin → Settings |
+| Payment QR code | Generated live from the UPI ID in Admin → Settings, or an uploaded bank QR image if you prefer |
+| Registration open/close control | `category_status` table — close or schedule an auto-close per category from Admin → Registration Status, no redeploy needed |
+| Live match scoring (Basketball) | `matches` + `score_events` tables — Admin → Live Scoring sets up a match and generates a no-login scorer link; anyone can watch a live scoreboard at `#livescore` |
+| Site analytics | `analytics_events` table — anonymous, browser-ID based, Admin → Site Analytics |
 
 ## Updating the site later
 Any time you want to change the sport rules, timeline copy, or styling,
 edit `index.html` and re-upload it to the same GitHub repo (or `git push`
 if you're using Git locally) — Render redeploys automatically within a
 minute of any push to the connected branch.
+
+If a change also needs a database update (a new table or column), that's
+a separate step: run the relevant SQL directly in Supabase's SQL Editor.
+Keep `supabase-schema.sql` in this repo up to date as you go, so it stays
+a true reflection of what's actually in your database — it's meant to be
+the one file you can hand to a future collaborator (or yourself, months
+later) to fully reconstruct the database from scratch.
 
 ## A note on security
 The admin passcode from the earlier version is gone — admin access is now
@@ -122,6 +138,15 @@ enforce that only logged-in organisers can approve registrations or edit
 content, even if someone tries to call the API directly. Participant
 phone numbers aren't publicly queryable; the "check my status" feature
 uses a locked-down lookup function instead of open table access.
+
+Two features are a deliberate exception to this, worth knowing about:
+live match scores and the no-login scorer link both work by letting
+anyone with the right link write to the `matches` and `score_events`
+tables without being logged in — this keeps event-day scoring simple
+(no accounts for volunteers to juggle), at the cost of real access
+control on those two tables specifically. Treat this as a low-stakes,
+convenience-over-security tradeoff appropriate for a friendly community
+event, not a pattern to copy for anything sensitive.
 
 ## A note on testing while logged in as an organiser
 Supabase Auth sessions are stored in the browser and shared across every
