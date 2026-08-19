@@ -1523,11 +1523,12 @@ async function renderFixtures(){
         <div class="grid grid-3">
           ${boards.map(b=>{
             const catLabel = sp?.registration.categories.find(c=>c.id===b.category_id)?.label || b.category_id;
+            const eventLabel = b.event_id ? ` — ${sp?.registration.events.find(e=>e.id===b.event_id)?.label || b.event_id}` : '';
             const genderLabel = b.gender ? ` — ${FIXTURE_GENDER_LABELS[b.gender]||b.gender}` : '';
             const url = publicUrl('fixture-boards', b.image_path, b.updated_at);
             return `<div class="card fixture-board-card" data-full="${url}" style="padding:0;overflow:hidden;cursor:pointer;">
               <div style="padding:14px 16px;border-bottom:1px solid var(--line);">
-                <strong style="font-family:'Anton';text-transform:uppercase;font-size:14.5px;">${esc(catLabel)}${genderLabel}</strong>
+                <strong style="font-family:'Anton';text-transform:uppercase;font-size:14.5px;">${esc(catLabel)}${eventLabel}${genderLabel}</strong>
               </div>
               <img src="${url}" style="width:100%;display:block;">
             </div>`;
@@ -3469,16 +3470,38 @@ function fixtureEligibleSports(){
   return SPORTS.filter(s => s.registration.categories && s.registration.categories.length);
 }
 
+function eventsForCategory(s, categoryId){
+  const ids = s.registration.eventsByCategory ? s.registration.eventsByCategory[categoryId] : null;
+  const all = s.registration.events || [];
+  return ids ? all.filter(e=>ids.includes(e.id)) : all;
+}
+
 function rebuildFbCategoryAndGender(){
   const sportId = document.getElementById('fbSport').value;
   const s = getSport(sportId);
   const catSel = document.getElementById('fbCategory');
   catSel.innerHTML = s.registration.categories.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+  rebuildFbEvent();
   const genderWrap = document.getElementById('fbGenderWrap');
   if(s.fixtureGenders && s.fixtureGenders.length){
     genderWrap.innerHTML = `<div class="field"><label>Gender</label><select id="fbGender">${s.fixtureGenders.map(g=>`<option value="${g}">${FIXTURE_GENDER_LABELS[g]||g}</option>`).join('')}</select></div>`;
   }else{
     genderWrap.innerHTML = '';
+  }
+}
+function rebuildFbEvent(){
+  const sportId = document.getElementById('fbSport').value;
+  const s = getSport(sportId);
+  const categoryId = document.getElementById('fbCategory').value;
+  const events = eventsForCategory(s, categoryId);
+  const eventWrap = document.getElementById('fbEventWrap');
+  // Only bother asking when a category genuinely has more than one event
+  // to tell apart (e.g. Singles vs Doubles) — sports with just one event
+  // per category skip this and post a single board as before.
+  if(events.length > 1){
+    eventWrap.innerHTML = `<div class="field"><label>Event</label><select id="fbEvent"><option value="">All events (one board covers everything)</option>${events.map(e=>`<option value="${e.id}">${esc(e.label)}</option>`).join('')}</select></div>`;
+  }else{
+    eventWrap.innerHTML = '';
   }
 }
 
@@ -3487,10 +3510,11 @@ async function adminFixtures(){
   const eligible = fixtureEligibleSports();
   main.innerHTML = `
     <h3 class="h-md" style="margin-bottom:8px;">Upload Fixtures Board</h3>
-    <p class="hint" style="margin-bottom:18px;">Upload a photo of the drawn fixtures/bracket for a sport, category (and gender, where that sport splits by gender). Uploading again for the same combination replaces the previous image.</p>
+    <p class="hint" style="margin-bottom:18px;">Upload a photo of the drawn fixtures/bracket for a sport, category, event (for sports with multiple events like Singles/Doubles) and gender, where applicable. Uploading again for the same combination replaces the previous image.</p>
     <div class="form-card" style="max-width:520px;padding:22px;margin-bottom:36px;">
       <div class="field"><label>Sport</label><select id="fbSport">${eligible.map(s=>`<option value="${s.id}">${s.icon} ${s.name}</option>`).join('')}</select></div>
       <div class="field"><label>Category</label><select id="fbCategory"></select></div>
+      <div id="fbEventWrap"></div>
       <div id="fbGenderWrap"></div>
       <div class="field">
         <label>Fixtures Board Image</label>
@@ -3507,6 +3531,7 @@ async function adminFixtures(){
   }
   document.getElementById('fbSport').addEventListener('change', rebuildFbCategoryAndGender);
   rebuildFbCategoryAndGender();
+  document.getElementById('fbCategory').addEventListener('change', rebuildFbEvent);
 
   let fbFile = null;
   const box = document.getElementById('fbBox');
@@ -3523,14 +3548,17 @@ async function adminFixtures(){
     if(!fbFile){ toast('Choose an image first', 'err'); return; }
     const sportId = document.getElementById('fbSport').value;
     const categoryId = document.getElementById('fbCategory').value;
+    const eventSel = document.getElementById('fbEvent');
+    const eventId = eventSel ? eventSel.value : '';
     const genderSel = document.getElementById('fbGender');
     const gender = genderSel ? genderSel.value : '';
     const pathSafeGender = gender || 'na';
-    const path = await uploadImage('fixture-boards', fbFile, null, {path:`${sportId}_${categoryId}_${pathSafeGender}.jpg`, upsert:true});
+    const pathSafeEvent = eventId || 'all';
+    const path = await uploadImage('fixture-boards', fbFile, null, {path:`${sportId}_${categoryId}_${pathSafeEvent}_${pathSafeGender}.jpg`, upsert:true});
     if(!path){ toast('Upload failed — try again', 'err'); return; }
     const {error} = await sb.from('fixture_boards').upsert(
-      {sport_id: sportId, category_id: categoryId, gender, image_path: path, updated_at: new Date().toISOString()},
-      {onConflict: 'sport_id,category_id,gender'}
+      {sport_id: sportId, category_id: categoryId, event_id: eventId, gender, image_path: path, updated_at: new Date().toISOString()},
+      {onConflict: 'sport_id,category_id,event_id,gender'}
     );
     if(error){ console.error(error); toast('Could not save board — try again', 'err'); return; }
     toast('Fixtures board uploaded', 'ok');
@@ -3543,13 +3571,14 @@ async function adminFixtures(){
   host.innerHTML = `<div class="grid grid-3">${list.map(b=>{
     const sp = getSport(b.sport_id);
     const catLabel = sp?.registration.categories.find(c=>c.id===b.category_id)?.label || b.category_id;
+    const eventLabel = b.event_id ? ` — ${sp?.registration.events.find(e=>e.id===b.event_id)?.label || b.event_id}` : '';
     const genderLabel = b.gender ? ` — ${FIXTURE_GENDER_LABELS[b.gender]||b.gender}` : '';
     const url = publicUrl('fixture-boards', b.image_path, b.updated_at);
     return `<div class="card" style="padding:14px;">
       <div class="tag">${sp?sp.icon+' '+sp.name:b.sport_id}</div>
-      <h3 style="font-size:15px;margin-top:6px;">${esc(catLabel)}${genderLabel}</h3>
+      <h3 style="font-size:15px;margin-top:6px;">${esc(catLabel)}${eventLabel}${genderLabel}</h3>
       <img src="${url}" style="margin-top:10px;border:1px solid var(--line);">
-      <div class="ractions" style="margin-top:10px;"><button class="btn-del" data-del-fb data-sport="${b.sport_id}" data-cat="${b.category_id}" data-gender="${b.gender}" data-path="${b.image_path}">Remove</button></div>
+      <div class="ractions" style="margin-top:10px;"><button class="btn-del" data-del-fb data-sport="${b.sport_id}" data-cat="${b.category_id}" data-event="${b.event_id}" data-gender="${b.gender}" data-path="${b.image_path}">Remove</button></div>
     </div>`;
   }).join('')}</div>`;
   host.querySelectorAll('[data-del-fb]').forEach(el=>{
@@ -3557,7 +3586,7 @@ async function adminFixtures(){
       if(!confirm('Remove this fixtures board?')) return;
       await sb.storage.from('fixture-boards').remove([el.dataset.path]);
       const {error} = await sb.from('fixture_boards').delete()
-        .eq('sport_id', el.dataset.sport).eq('category_id', el.dataset.cat).eq('gender', el.dataset.gender);
+        .eq('sport_id', el.dataset.sport).eq('category_id', el.dataset.cat).eq('event_id', el.dataset.event).eq('gender', el.dataset.gender);
       if(error) console.error(error);
       toast('Removed', 'info');
       adminFixtures();
