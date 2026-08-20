@@ -3607,10 +3607,23 @@ async function adminFixtures(){
   host.querySelectorAll('[data-del-fb]').forEach(el=>{
     el.addEventListener('click', async ()=>{
       if(!confirm('Remove this fixtures board?')) return;
-      await sb.storage.from('fixture-boards').remove([el.dataset.path]);
+      // Both the underlying file and the database row need to go — and
+      // specifically in that order, checking the file removal actually
+      // succeeded before touching the row. Previously this fired both
+      // unconditionally, so a silently-failed file removal could still
+      // let the row get deleted — leaving an orphaned file sitting at
+      // that exact path with nothing pointing to it, which then blocks
+      // (or corrupts) the next upload to that same sport/category/event/
+      // gender combination in confusing ways.
+      const {error: storageError} = await sb.storage.from('fixture-boards').remove([el.dataset.path]);
+      if(storageError){
+        console.error(storageError);
+        toast("Couldn't remove the image file — try again, or delete it directly in Supabase Storage", 'err');
+        return;
+      }
       const {error} = await sb.from('fixture_boards').delete()
         .eq('sport_id', el.dataset.sport).eq('category_id', el.dataset.cat).eq('event_id', el.dataset.event).eq('gender', el.dataset.gender);
-      if(error) console.error(error);
+      if(error){ console.error(error); toast('Image removed, but could not remove its listing — try again', 'err'); adminFixtures(); return; }
       toast('Removed', 'info');
       adminFixtures();
     });
