@@ -1498,6 +1498,7 @@ async function renderSportDetail(id){
                 return `<div class="card fixture-board-card" data-full="${url}" style="padding:0;overflow:hidden;cursor:pointer;">
                   <div style="padding:10px 14px;border-bottom:1px solid var(--line);">
                     <strong style="font-size:12.5px;">${esc(label)}</strong>
+                    ${b.event_time ? `<div style="font-size:11.5px;color:var(--gold-light);margin-top:3px;">🕐 ${esc(b.event_time)}</div>` : ''}
                   </div>
                   <img src="${url}" style="width:100%;display:block;">
                 </div>`;
@@ -1621,6 +1622,7 @@ async function renderFixtures(){
             return `<div class="card fixture-board-card" data-full="${url}" style="padding:0;overflow:hidden;cursor:pointer;">
               <div style="padding:14px 16px;border-bottom:1px solid var(--line);">
                 <strong style="font-family:'Oswald';text-transform:uppercase;font-size:14.5px;">${esc(catLabel)}${eventLabel}${genderLabel}</strong>
+                ${b.event_time ? `<div style="font-size:12px;color:var(--gold-light);margin-top:4px;">🕐 ${esc(b.event_time)}</div>` : ''}
               </div>
               <img src="${url}" style="width:100%;display:block;">
             </div>`;
@@ -3614,6 +3616,7 @@ async function adminFixtures(){
         <label>Fixtures Board Image</label>
         <div class="upload-box" id="fbBox"><p class="mono" style="font-size:12px;color:var(--slate);">📎 Click to upload a photo of the fixtures board</p><input type="file" id="fbInput" accept="image/*" style="display:none;"></div>
       </div>
+      <div class="field"><label>Time (optional)</label><input type="text" id="fbTime" placeholder="e.g. 22 Aug, 7:00 AM or 22 Aug, Report by 10:30 AM"></div>
       <button class="btn btn-primary" id="fbAddBtn">Upload / Replace Board</button>
     </div>
     <h3 class="h-md" style="margin-bottom:18px;">Current Boards</h3>
@@ -3646,14 +3649,18 @@ async function adminFixtures(){
     const eventId = eventSel ? eventSel.value : '';
     const genderSel = document.getElementById('fbGender');
     const gender = genderSel ? genderSel.value : '';
+    const eventTime = document.getElementById('fbTime').value.trim();
     const pathSafeGender = gender || 'na';
     const pathSafeEvent = eventId || 'all';
     const path = await uploadImage('fixture-boards', fbFile, null, {path:`${sportId}_${categoryId}_${pathSafeEvent}_${pathSafeGender}.jpg`, upsert:true});
     if(!path){ toast('Upload failed — try again', 'err'); return; }
-    const {error} = await sb.from('fixture_boards').upsert(
-      {sport_id: sportId, category_id: categoryId, event_id: eventId, gender, image_path: path, updated_at: new Date().toISOString()},
-      {onConflict: 'sport_id,category_id,event_id,gender'}
-    );
+    // event_time is only included in the write when something was actually
+    // typed here — replacing just the image (e.g. fixing a typo in the
+    // board) without retyping the time must never silently wipe out a
+    // timing that was already carefully set.
+    const row = {sport_id: sportId, category_id: categoryId, event_id: eventId, gender, image_path: path, updated_at: new Date().toISOString()};
+    if(eventTime) row.event_time = eventTime;
+    const {error} = await sb.from('fixture_boards').upsert(row, {onConflict: 'sport_id,category_id,event_id,gender'});
     if(error){ console.error(error); toast('Could not save board — try again', 'err'); return; }
     toast('Fixtures board uploaded', 'ok');
     adminFixtures();
@@ -3668,13 +3675,31 @@ async function adminFixtures(){
     const eventLabel = b.event_id ? ` — ${sp?.registration.events.find(e=>e.id===b.event_id)?.label || b.event_id}` : '';
     const genderLabel = b.gender ? ` — ${FIXTURE_GENDER_LABELS[b.gender]||b.gender}` : '';
     const url = publicUrl('fixture-boards', b.image_path, b.updated_at);
+    const boardKey = `${b.sport_id}|${b.category_id}|${b.event_id}|${b.gender}`;
     return `<div class="card" style="padding:14px;">
       <div class="tag">${sp?sp.icon+' '+sp.name:b.sport_id}</div>
       <h3 style="font-size:15px;margin-top:6px;">${esc(catLabel)}${eventLabel}${genderLabel}</h3>
       <img src="${url}" style="margin-top:10px;border:1px solid var(--line);border-radius:var(--radius);">
+      <div class="field" style="margin-top:10px;margin-bottom:0;">
+        <label style="font-size:11px;">Time</label>
+        <div style="display:flex;gap:6px;">
+          <input type="text" class="fbTimeEdit" data-key="${boardKey}" value="${esc(b.event_time||'')}" placeholder="Not set" style="flex:1;">
+          <button class="btn-outline btn-sm" data-save-time="${boardKey}" data-sport="${b.sport_id}" data-cat="${b.category_id}" data-event="${b.event_id}" data-gender="${b.gender}">Save</button>
+        </div>
+      </div>
       <div class="ractions" style="margin-top:10px;"><button class="btn-del" data-del-fb data-sport="${b.sport_id}" data-cat="${b.category_id}" data-event="${b.event_id}" data-gender="${b.gender}" data-path="${b.image_path}">Remove</button></div>
     </div>`;
   }).join('')}</div>`;
+  host.querySelectorAll('[data-save-time]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const input = host.querySelector(`.fbTimeEdit[data-key="${el.dataset.saveTime}"]`);
+      const newTime = input.value.trim();
+      const {error} = await sb.from('fixture_boards').update({event_time: newTime || null})
+        .eq('sport_id', el.dataset.sport).eq('category_id', el.dataset.cat).eq('event_id', el.dataset.event).eq('gender', el.dataset.gender);
+      if(error){ console.error(error); toast('Could not save time — try again', 'err'); return; }
+      toast('Time saved', 'ok');
+    });
+  });
   host.querySelectorAll('[data-del-fb]').forEach(el=>{
     el.addEventListener('click', async ()=>{
       if(!confirm('Remove this fixtures board?')) return;
