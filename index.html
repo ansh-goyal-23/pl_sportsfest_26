@@ -483,6 +483,19 @@ function publicUrl(bucket, path, bust){
   const {data} = sb.storage.from(bucket).getPublicUrl(path);
   return bust ? `${data.publicUrl}?t=${encodeURIComponent(bust)}` : data.publicUrl;
 }
+// For non-image files (PDF, Excel, Word) — uploadImage() always runs a
+// file through canvas-based image compression first, which only works on
+// actual images. This uploads the raw file as-is, under a random path
+// (the original filename is kept separately in the database for display,
+// so this never has to deal with spaces/special characters in a storage
+// path).
+async function uploadRawFile(bucket, file){
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const {error} = await sb.storage.from(bucket).upload(path, file, {contentType: file.type || 'application/octet-stream'});
+  if(error){ console.error('upload failed', error); return null; }
+  return path;
+}
 async function signedUrl(bucket, path, seconds){
   if(!path) return null;
   const {data, error} = await sb.storage.from(bucket).createSignedUrl(path, seconds||600);
@@ -1437,6 +1450,7 @@ async function renderSportDetail(id){
       </div>
     </div>
     <section class="wrap" style="max-width:820px;">
+      <div id="sportFixturesHost"></div>
       <div class="grid grid-3" style="margin-bottom:40px;">
         <div class="card"><div class="tag">Venue</div><h3 style="font-size:18px;">${s.venue}</h3></div>
         <div class="card"><div class="tag">Date</div><h3 style="font-size:18px;">${s.dateLabel}</h3></div>
@@ -1445,6 +1459,61 @@ async function renderSportDetail(id){
       <div class="rules-block">${s.rulesHtml}</div>
     </section>
   `);
+
+  // Fixtures load in just after the rest of the page, rather than
+  // blocking the whole page on a database round-trip — the static parts
+  // (rules, venue, registration button) don't need to wait for it. If
+  // this sport has no boards posted yet, the section stays empty rather
+  // than showing an empty placeholder.
+  (async ()=>{
+    const [{data: boards}, {data: liveMatches}] = await Promise.all([
+      sb.from('fixture_boards').select('*').eq('sport_id', s.id).order('category_id'),
+      sb.from('matches').select('id').eq('sport_id', s.id).in('clock_state', ['running','paused']),
+    ]);
+    const host = document.getElementById('sportFixturesHost');
+    if(!host) return; // navigated away before this resolved
+
+    let html = '';
+    if(liveMatches && liveMatches.length){
+      html += `<a href="#livescore" class="msg-banner ok" style="display:block;margin-bottom:20px;text-decoration:none;">
+        🔴 <strong>${liveMatches.length} match${liveMatches.length>1?'es are':' is'} live right now</strong> — tap to watch the score update live →
+      </a>`;
+    }
+
+    if(boards && boards.length){
+      const byCategory = {};
+      boards.forEach(b=>{ (byCategory[b.category_id] = byCategory[b.category_id]||[]).push(b); });
+      html += `<h3 class="h-md" style="margin-bottom:16px;">Fixtures</h3>`;
+      html += Object.keys(byCategory).map(catId=>{
+        const catLabel = s.registration.categories?.find(c=>c.id===catId)?.label || catId;
+        return `
+          <div style="margin-bottom:28px;">
+            <h4 style="font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--gold-light);margin-bottom:12px;">${esc(catLabel)}</h4>
+            <div class="grid grid-3">
+              ${byCategory[catId].map(b=>{
+                const eventLabel = b.event_id ? (s.registration.events?.find(e=>e.id===b.event_id)?.label || b.event_id) : '';
+                const genderLabel = b.gender ? (FIXTURE_GENDER_LABELS[b.gender]||b.gender) : '';
+                const label = [eventLabel, genderLabel].filter(Boolean).join(' — ') || 'Fixtures Board';
+                const url = publicUrl('fixture-boards', b.image_path, b.updated_at);
+                return `<div class="card fixture-board-card" data-full="${url}" style="padding:0;overflow:hidden;cursor:pointer;">
+                  <div style="padding:10px 14px;border-bottom:1px solid var(--line);">
+                    <strong style="font-size:12.5px;">${esc(label)}</strong>
+                  </div>
+                  <img src="${url}" style="width:100%;display:block;">
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    host.innerHTML = html;
+    host.querySelectorAll('[data-full]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        openModal(`<button class="close-x" id="modalClose">✕</button><img src="${el.dataset.full}">`);
+      });
+    });
+  })();
 }
 
 /* =========================================================
@@ -2660,6 +2729,7 @@ const ADMIN_SECTIONS = [
   {id:'fixtures', label:'Fixtures & Results'},
   {id:'sponsors', label:'Sponsorships'},
   {id:'photos', label:'Photos & Highlights'},
+  {id:'documents', label:'Documents'},
   {id:'settings', label:'Settings'},
 ];
 
@@ -2702,6 +2772,7 @@ async function loadAdminSection(){
     fixtures: adminFixtures,
     sponsors: adminSponsors,
     photos: adminPhotos,
+    documents: adminDocuments,
     settings: adminSettings,
   };
   await map[STATE.adminSection]();
@@ -3762,6 +3833,105 @@ async function adminPhotos(){
       await tDelete('updates', el.dataset.delPho); // same shared id, cleans up the linked update too
       toast('Deleted','info');
       adminPhotos();
+    });
+  });
+}
+
+/* ---------- Admin: Documents ---------- */
+// Private, admin-only reference storage — PDFs, Excel sheets, Word docs
+// for the Sports Committee's own use (planning documents, fixture
+// exports, etc.). Never shown anywhere on the public site.
+async function adminDocuments(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `
+    <h3 class="h-md" style="margin-bottom:14px;">Upload Document</h3>
+    <p class="hint" style="margin-bottom:16px;">Upload a PDF, Excel sheet, or Word document for the Sports Committee's own reference. These are private — only logged-in organisers can see or download them, never the public.</p>
+    <div class="form-card" style="max-width:520px;padding:22px;margin-bottom:36px;">
+      <div class="field"><label>Label (optional)</label><input type="text" id="docLabel" placeholder="e.g. Basketball Open — Round Robin Results"></div>
+      <div class="field">
+        <label>File</label>
+        <div class="upload-box" id="docBox"><p class="mono" style="font-size:12px;color:var(--slate);">📎 Click to choose a PDF, Excel, or Word file</p><input type="file" id="docInput" accept=".pdf,.xlsx,.xls,.docx,.doc" style="display:none;"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="docAddBtn">Upload Document</button>
+      <div id="docMsg"></div>
+    </div>
+    <h3 class="h-md" style="margin-bottom:14px;">Uploaded Documents</h3>
+    <div id="docList"><div class="loading-dots">Loading…</div></div>
+  `;
+
+  let docFile = null;
+  const box = document.getElementById('docBox');
+  const input = document.getElementById('docInput');
+  box.addEventListener('click', ()=>input.click());
+  input.addEventListener('change', ()=>{
+    const f = input.files[0]; if(!f) return;
+    docFile = f;
+    box.innerHTML = `<p class="mono" style="font-size:12px;color:var(--green);">✓ ${esc(f.name)} (${(f.size/1024).toFixed(0)} KB)</p>`;
+    box.addEventListener('click', ()=>input.click());
+  });
+
+  document.getElementById('docAddBtn').addEventListener('click', async ()=>{
+    if(!docFile){ toast('Choose a file first', 'err'); return; }
+    const btn = document.getElementById('docAddBtn');
+    btn.disabled = true; btn.textContent = 'Uploading…';
+    const ext = (docFile.name.split('.').pop() || '').toLowerCase();
+    const path = await uploadRawFile('admin-documents', docFile);
+    if(!path){
+      btn.disabled = false; btn.textContent = 'Upload Document';
+      toast('Upload failed — try again', 'err');
+      return;
+    }
+    const label = document.getElementById('docLabel').value.trim();
+    const {error} = await sb.from('admin_documents').insert({
+      file_name: docFile.name, label: label || null, file_path: path, file_ext: ext,
+    });
+    btn.disabled = false; btn.textContent = 'Upload Document';
+    if(error){ console.error(error); toast('Could not save — try again', 'err'); return; }
+    toast('Document uploaded', 'ok');
+    adminDocuments();
+  });
+
+  const list = await tFetchAll('admin_documents', 'uploaded_at', false);
+  const host = document.getElementById('docList');
+  if(!list.length){ host.innerHTML = `<div class="empty-state"><p>No documents uploaded yet.</p></div>`; return; }
+  const DOC_ICONS = {pdf:'📕', xlsx:'📗', xls:'📗', docx:'📘', doc:'📘'};
+  host.innerHTML = list.map(d=>`
+    <div class="card" style="padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div>
+        <strong>${DOC_ICONS[d.file_ext]||'📄'} ${esc(d.label || d.file_name)}</strong>
+        ${d.label ? `<div class="hint" style="margin-top:2px;">${esc(d.file_name)}</div>` : ''}
+        <div class="hint" style="margin-top:2px;">Uploaded ${fmtDateTime(d.uploaded_at)}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-outline btn-sm" data-download-doc="${d.id}" data-path="${d.file_path}">Download</button>
+        <button class="btn-del" data-del-doc="${d.id}" data-path="${d.file_path}">Delete</button>
+      </div>
+    </div>`).join('');
+
+  host.querySelectorAll('[data-download-doc]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const url = await signedUrl('admin-documents', el.dataset.path, 300);
+      if(!url){ toast('Could not generate a download link — try again', 'err'); return; }
+      window.open(url, '_blank');
+    });
+  });
+  host.querySelectorAll('[data-del-doc]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      if(!confirm('Delete this document?')) return;
+      // Same order-and-check discipline as fixture board deletion: verify
+      // the file itself is actually gone before removing its listing, so
+      // a silently-failed storage delete can't leave an orphaned file
+      // with nothing pointing to it.
+      const {error: storageError} = await sb.storage.from('admin-documents').remove([el.dataset.path]);
+      if(storageError){
+        console.error(storageError);
+        toast("Couldn't remove the file — try again, or delete it directly in Supabase Storage", 'err');
+        return;
+      }
+      const {error} = await sb.from('admin_documents').delete().eq('id', el.dataset.delDoc);
+      if(error){ console.error(error); toast('File removed, but could not remove its listing — try again', 'err'); adminDocuments(); return; }
+      toast('Deleted', 'info');
+      adminDocuments();
     });
   });
 }
