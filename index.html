@@ -1515,7 +1515,7 @@ async function renderSportDetail(id){
     host.innerHTML = html;
     host.querySelectorAll('[data-full]').forEach(el=>{
       el.addEventListener('click', ()=>{
-        openModal(`<button class="close-x" id="modalClose">✕</button><img src="${el.dataset.full}">`);
+        openModal(`<button class="close-x" id="modalClose">✕</button><img src="${el.dataset.full}"><a href="${el.dataset.full}" download target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:block;text-align:center;margin-top:14px;">⬇ Download</a>`);
       });
     });
   })();
@@ -1636,7 +1636,7 @@ async function renderFixtures(){
   }).join('');
   host.querySelectorAll('[data-full]').forEach(el=>{
     el.addEventListener('click', ()=>{
-      openModal(`<button class="close-x" id="modalClose">✕</button><img src="${el.dataset.full}">`);
+      openModal(`<button class="close-x" id="modalClose">✕</button><img src="${el.dataset.full}"><a href="${el.dataset.full}" download target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:block;text-align:center;margin-top:14px;">⬇ Download</a>`);
     });
   });
 }
