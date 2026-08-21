@@ -871,16 +871,16 @@ const SPORTS = [
 {
   id:'chess', name:'Chess', short:'Individual', icon:'♟️',
   poc:[{name:'Rahul',phone:'9313309503'}],
-  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'U10 ₹100 · Open ₹200 · Free for 60+',
-  tagline:'Individual chess competition in Under 10, Open and 60+ categories.',
+  dateLabel:'22–23 Aug', venue:"Society's Clubhouse", feeLabel:'U9/9-12 ₹100 · Open ₹200 · Free for 60+',
+  tagline:'Individual chess competition in U9, 9-12, Open and 60+ categories.',
   registration:{
     mode:'form',
-    categories:[{id:'u10',label:'Under 10'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
+    categories:[{id:'u9',label:'U9'},{id:'9-12',label:'9-12'},{id:'open',label:'Open'},{id:'60+',label:'60+'}],
     events:[{id:'chess', label:'Chess', teamSize:1, genderRule:'any'}]
   },
   rulesHtml:`
-    <h4>Categories</h4><p>Under 10, Open, and 60+.</p>
-    <h4>Registration fee</h4><p>Under 10: ₹100 per person. Open: ₹200 per person. 60+ category: Free. Individual registration.</p>
+    <h4>Categories</h4><p>U9, 9-12, Open, and 60+.</p>
+    <h4>Registration fee</h4><p>U9 &amp; 9-12: ₹100 per person. Open: ₹200 per person. 60+ category: Free. Individual registration.</p>
     <h4>Format &amp; duration</h4><p>Standard Chess rules apply. Tournament format and time control will be decided by the Sports Committee based on registrations and announced before the competition.</p>
     <h4>Reporting</h4><p>Participants report before their scheduled match; late arrival may mean a walkover.</p>
     <h4>Awards</h4><p>🥇 Winner, 🥈 Runner-up per category, plus participation certificates for all.</p>
@@ -1065,6 +1065,8 @@ const AGE_CATEGORY_RULES = {
   '60+':  {min:60},
   'tennis-u8':  {min:6, max:8},
   'tennis-u10': {min:9, max:10},
+  'u9':   {max:8},
+  '9-12': {min:9, max:12},
 };
 /* =========================================================
    LIVE SCORING — shared helpers used by the scorer page,
@@ -1145,6 +1147,8 @@ const CATEGORY_FEE_RATE = {
   '60+':  0,
   'tennis-u8':  100,
   'tennis-u10': 100,
+  'u9':   100,
+  '9-12': 100,
 };
 function computeFee(ev, catId){
   if(ev.feeType === 'flat') return ev.fee;
