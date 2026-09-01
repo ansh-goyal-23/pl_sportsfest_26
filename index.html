@@ -341,20 +341,46 @@ textarea{resize:vertical;min-height:90px;}
 .stat-box .n{font-family:'Oswald';font-weight:700;font-size:30px;color:var(--gold);}
 .stat-box .l{font-family:'IBM Plex Mono';font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--slate);margin-top:4px;}
 .home-slideshow{margin:10px 0 0;}
-.slideshow-viewport{position:relative;width:100%;aspect-ratio:16/7;min-height:220px;border-radius:var(--radius);overflow:hidden;background:var(--ink);border:1px solid var(--line);}
-.slideshow-viewport .slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s ease;}
-.slideshow-viewport .slide.active{opacity:1;}
-.slide-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(11,20,31,.55);color:var(--bright);border:none;width:38px;height:38px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
+.coverflow{position:relative;width:100%;height:340px;border-radius:var(--radius);overflow:hidden;background:var(--ink);border:1px solid var(--line);}
+.cf-slide{
+  position:absolute; top:50%; left:50%;
+  width:56%; height:78%;
+  margin-top:calc(-1 * 78% / 2); margin-left:calc(-1 * 56% / 2);
+  border-radius:10px; overflow:hidden;
+  box-shadow:0 12px 30px rgba(0,0,0,.35);
+  transition:transform .6s cubic-bezier(.22,.68,0,1.01), opacity .6s ease, filter .6s ease;
+  transform:translateX(calc(var(--off,0) * 46%)) scale(0.55);
+  opacity:0; filter:brightness(.55);
+  pointer-events:none;
+}
+.cf-slide img{width:100%;height:100%;object-fit:cover;display:block;}
+.cf-slide.hidden-slide{opacity:0;}
+.cf-slide.side2{opacity:.55; filter:brightness(.55); transform:translateX(calc(var(--off,0) * 40%)) scale(0.6);}
+.cf-slide.side1{opacity:.85; filter:brightness(.7); transform:translateX(calc(var(--off,0) * 44%)) scale(0.78); pointer-events:auto; cursor:pointer;}
+.cf-slide.current{
+  opacity:1; filter:brightness(1);
+  transform:translateX(0) scale(1);
+  z-index:100 !important;
+  pointer-events:auto;
+}
+.slide-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(11,20,31,.55);color:var(--bright);border:none;width:38px;height:38px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:200;}
 .slide-nav.prev{left:14px;}
 .slide-nav.next{right:14px;}
-.slide-dots{position:absolute;bottom:14px;left:0;right:0;display:flex;justify-content:center;gap:8px;}
+.slide-dots{position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:8px;z-index:200;}
 .slide-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer;}
 .slide-dot.active{background:var(--gold-light);}
-@media(max-width:640px){.slideshow-viewport{aspect-ratio:4/3;}.slide-nav{width:32px;height:32px;font-size:18px;}}
-.results-table{font-size:13.5px;}
-.results-table th,.results-table td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
+@media(max-width:900px){.cf-slide{width:66%;}.cf-slide.side1{transform:translateX(calc(var(--off,0) * 52%)) scale(0.72);}.cf-slide.side2{opacity:0;}}
+@media(max-width:640px){.coverflow{height:230px;}.cf-slide{width:78%;}.cf-slide.side1{transform:translateX(calc(var(--off,0) * 58%)) scale(0.68);}.cf-slide.side2{opacity:0;}.slide-nav{width:32px;height:32px;font-size:18px;}}
+.results-table{font-size:13.5px;table-layout:fixed;width:100%;}
+.results-table th,.results-table td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:normal;word-break:break-word;vertical-align:top;}
 .results-table th{font-family:'Oswald';text-transform:uppercase;font-size:12px;letter-spacing:.04em;color:var(--slate);background:var(--cream-dim);}
 .results-table tbody tr:hover{background:var(--cream-dim);}
+.results-table th:nth-child(1),.results-table td:nth-child(1){width:20%;}
+.results-table th:nth-child(2),.results-table td:nth-child(2){width:10%;}
+.results-table th:nth-child(3),.results-table td:nth-child(3){width:16%;}
+.results-table th:nth-child(4),.results-table td:nth-child(4){width:20%;}
+.results-table th:nth-child(5),.results-table td:nth-child(5){width:14%;}
+.results-table th:nth-child(6),.results-table td:nth-child(6){width:20%;}
 @media print{.topbar,.ticker-wrap,footer,.no-print{display:none;}}
 </style>
 </head>
@@ -1506,7 +1532,14 @@ async function renderHome(){
 }
 
 // Fetches gallery photos and, if there are any, shows and starts an
-// auto-rotating slideshow between the hero and the Overview section.
+// auto-rotating "coverflow" slideshow between the hero and the Overview
+// section: the current photo sits big and centered, with the previous
+// and next couple of photos peeking in small on either side in order.
+// Every photo is one fixed DOM element positioned with a CSS transform —
+// advancing just re-assigns each element's slot (position/scale/opacity),
+// so the browser animates the change smoothly via the transition on
+// .cf-slide, giving the incoming photo a zoom-in and the outgoing one a
+// zoom-out without any JS-driven animation loop.
 // Stays hidden entirely if the gallery is empty, so an event with no
 // photos yet doesn't show a blank/broken-looking strip on the home page.
 let homeSlideshowTimer = null;
@@ -1519,27 +1552,63 @@ async function initHomeSlideshow(){
   try{ photos = await tFetchAll('gallery_photos', 'created_at', false); }catch(e){ console.error(e); }
   if(!photos.length){ section.style.display = 'none'; return; }
   section.style.display = '';
+  const n = photos.length;
   let active = 0;
+
   host.innerHTML = `
-    <div class="slideshow-viewport">
-      ${photos.map((p,i)=>`<img src="${p.url}" class="slide ${i===0?'active':''}" data-i="${i}">`).join('')}
-      <button class="slide-nav prev" type="button" aria-label="Previous photo">‹</button>
-      <button class="slide-nav next" type="button" aria-label="Next photo">›</button>
-      <div class="slide-dots">${photos.map((p,i)=>`<span class="slide-dot ${i===0?'active':''}" data-i="${i}"></span>`).join('')}</div>
+    <div class="coverflow">
+      ${photos.map((p,i)=>`<div class="cf-slide" data-i="${i}"><img src="${p.url}" alt="${esc(p.caption||'')}"></div>`).join('')}
+      ${n>1 ? `<button class="slide-nav prev" type="button" aria-label="Previous photo">‹</button>
+      <button class="slide-nav next" type="button" aria-label="Next photo">›</button>` : ''}
+      <div class="slide-dots">${photos.map((p,i)=>`<span class="slide-dot" data-i="${i}"></span>`).join('')}</div>
     </div>`;
-  const slides = Array.from(host.querySelectorAll('.slide'));
+
+  const slideEls = Array.from(host.querySelectorAll('.cf-slide'));
   const dots = Array.from(host.querySelectorAll('.slide-dot'));
-  function show(i){
-    active = (i + photos.length) % photos.length;
-    slides.forEach(s=> s.classList.toggle('active', Number(s.dataset.i)===active));
+
+  // Shortest signed distance from `active`, e.g. with 5 photos and
+  // active=0, photo 4 is offset -1 (just behind) not +4 (all the way
+  // around) — that's what makes the row feel continuous/looping.
+  function offsetOf(i){
+    let d = (i - active) % n;
+    if(d > n/2) d -= n;
+    if(d < -n/2) d += n;
+    return d;
+  }
+
+  function layout(){
+    slideEls.forEach(el=>{
+      const i = Number(el.dataset.i);
+      const off = offsetOf(i);
+      el.classList.toggle('current', off===0);
+      el.classList.toggle('side1', Math.abs(off)===1);
+      el.classList.toggle('side2', Math.abs(off)===2);
+      el.classList.toggle('hidden-slide', Math.abs(off)>2);
+      el.style.setProperty('--off', off);
+      el.style.zIndex = 100 - Math.abs(off);
+    });
     dots.forEach(d=> d.classList.toggle('active', Number(d.dataset.i)===active));
   }
-  host.querySelector('.slide-nav.prev').addEventListener('click', ()=>{ show(active-1); resetTimer(); });
-  host.querySelector('.slide-nav.next').addEventListener('click', ()=>{ show(active+1); resetTimer(); });
+  layout();
+
+  function show(i){
+    active = ((i % n) + n) % n;
+    layout();
+  }
+  if(n>1){
+    host.querySelector('.slide-nav.prev').addEventListener('click', ()=>{ show(active-1); resetTimer(); });
+    host.querySelector('.slide-nav.next').addEventListener('click', ()=>{ show(active+1); resetTimer(); });
+  }
   dots.forEach(d=> d.addEventListener('click', ()=>{ show(Number(d.dataset.i)); resetTimer(); }));
+  // Clicking a peeking side slide brings it to center, same as a dot.
+  slideEls.forEach(el=> el.addEventListener('click', ()=>{
+    if(el.classList.contains('current')) return;
+    show(Number(el.dataset.i));
+    resetTimer();
+  }));
   function resetTimer(){
     if(homeSlideshowTimer) clearInterval(homeSlideshowTimer);
-    if(photos.length > 1) homeSlideshowTimer = setInterval(()=> show(active+1), 4500);
+    if(n > 1) homeSlideshowTimer = setInterval(()=> show(active+1), 5000);
   }
   resetTimer();
 }
