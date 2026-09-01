@@ -345,21 +345,26 @@ textarea{resize:vertical;min-height:90px;}
 .cf-slide{
   position:absolute; top:50%; left:50%;
   width:56%; height:78%;
-  margin-top:calc(-1 * 78% / 2); margin-left:calc(-1 * 56% / 2);
+  /* Centered via transform (not percentage margins — those are always
+     relative to the container's WIDTH, even for margin-top/bottom, so
+     on a wide-but-short desktop container they pushed the slide way
+     off-center vertically). translate(-50%,-50%) uses the element's
+     OWN size, so it centers correctly regardless of container shape;
+     the --off-driven translateX/scale below is appended after it. */
   border-radius:10px; overflow:hidden;
   box-shadow:0 12px 30px rgba(0,0,0,.35);
   transition:transform .6s cubic-bezier(.22,.68,0,1.01), opacity .6s ease, filter .6s ease;
-  transform:translateX(calc(var(--off,0) * 46%)) scale(0.55);
+  transform:translate(-50%,-50%) translateX(calc(var(--off,0) * 46%)) scale(0.55);
   opacity:0; filter:brightness(.55);
   pointer-events:none;
 }
 .cf-slide img{width:100%;height:100%;object-fit:cover;display:block;}
 .cf-slide.hidden-slide{opacity:0;}
-.cf-slide.side2{opacity:.55; filter:brightness(.55); transform:translateX(calc(var(--off,0) * 40%)) scale(0.6);}
-.cf-slide.side1{opacity:.85; filter:brightness(.7); transform:translateX(calc(var(--off,0) * 44%)) scale(0.78); pointer-events:auto; cursor:pointer;}
+.cf-slide.side2{opacity:.55; filter:brightness(.55); transform:translate(-50%,-50%) translateX(calc(var(--off,0) * 40%)) scale(0.6);}
+.cf-slide.side1{opacity:.85; filter:brightness(.7); transform:translate(-50%,-50%) translateX(calc(var(--off,0) * 44%)) scale(0.78); pointer-events:auto; cursor:pointer;}
 .cf-slide.current{
   opacity:1 !important; filter:brightness(1) !important;
-  transform:translateX(0) scale(1) !important;
+  transform:translate(-50%,-50%) translateX(0) scale(1) !important;
   z-index:100 !important;
   pointer-events:auto !important;
 }
@@ -369,8 +374,8 @@ textarea{resize:vertical;min-height:90px;}
 .slide-dots{position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:8px;z-index:200;}
 .slide-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer;}
 .slide-dot.active{background:var(--gold-light);}
-@media(max-width:900px){.cf-slide{width:66%;}.cf-slide.side1{transform:translateX(calc(var(--off,0) * 52%)) scale(0.72);}.cf-slide.side2{opacity:0;}}
-@media(max-width:640px){.coverflow{height:230px;}.cf-slide{width:78%;}.cf-slide.side1{transform:translateX(calc(var(--off,0) * 58%)) scale(0.68);}.cf-slide.side2{opacity:0;}.slide-nav{width:32px;height:32px;font-size:18px;}}
+@media(max-width:900px){.cf-slide{width:66%;}.cf-slide.side1{transform:translate(-50%,-50%) translateX(calc(var(--off,0) * 52%)) scale(0.72);}.cf-slide.side2{opacity:0;}}
+@media(max-width:640px){.coverflow{height:230px;}.cf-slide{width:78%;}.cf-slide.side1{transform:translate(-50%,-50%) translateX(calc(var(--off,0) * 58%)) scale(0.68);}.cf-slide.side2{opacity:0;}.slide-nav{width:32px;height:32px;font-size:18px;}}
 .results-table{font-size:13.5px;table-layout:fixed;width:100%;}
 .results-table th,.results-table td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:normal;word-break:break-word;vertical-align:top;}
 .results-table th{font-family:'Oswald';text-transform:uppercase;font-size:12px;letter-spacing:.04em;color:var(--slate);background:var(--cream-dim);}
