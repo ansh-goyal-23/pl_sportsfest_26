@@ -409,19 +409,104 @@ async function tDelete(table, id){
 }
 
 /* ---------- Settings (UPI id) ---------- */
-const DEFAULT_SETTINGS = { upiId:'', paymentQrPath:null };
+const DEFAULT_SETTINGS = { upiId:'', paymentQrPath:null, resultsSheetUrl:'' };
 async function getSettings(){
   const {data, error} = await sb.from('settings').select('*').eq('id','main').single();
   if(error || !data) return DEFAULT_SETTINGS;
-  return { upiId: data.upi_id || '', paymentQrPath: data.payment_qr_path || null };
+  return { upiId: data.upi_id || '', paymentQrPath: data.payment_qr_path || null, resultsSheetUrl: data.results_sheet_url || '' };
 }
 async function saveSettings(patch){
   const update = {updated_at: new Date().toISOString()};
   if(patch.upiId !== undefined) update.upi_id = patch.upiId;
   if(patch.paymentQrPath !== undefined) update.payment_qr_path = patch.paymentQrPath;
+  if(patch.resultsSheetUrl !== undefined) update.results_sheet_url = patch.resultsSheetUrl;
   const {error} = await sb.from('settings').update(update).eq('id','main');
   if(error) console.error(error);
   return getSettings();
+}
+
+// Converts a Google Sheets "Publish to web" link (any of the normal
+// shapes: /pub?output=csv, /pubhtml, /edit#gid=..., a plain /d/<id>/
+// link) into the direct CSV export URL. Sheets' CSV endpoint is CORS-open
+// to browser fetches, so this can be read directly from the client with
+// no API key and no backend involved.
+function toSheetCsvUrl(rawUrl){
+  if(!rawUrl) return null;
+  const url = rawUrl.trim();
+  if(!url) return null;
+  // Already a /pub...output=csv link — use as-is (preserve gid if present).
+  if(/\/pub/.test(url) && /output=csv/.test(url)) return url;
+  // A published-but-not-CSV pub link (e.g. /pubhtml) — swap the output param.
+  if(/\/pub/.test(url)){
+    const withCsv = url.replace(/output=[a-z]+/i, 'output=csv');
+    return /output=csv/.test(withCsv) ? withCsv : (withCsv + (withCsv.includes('?') ? '&' : '?') + 'output=csv');
+  }
+  // A normal (non-published) share/edit link — /spreadsheets/d/<id>/...
+  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if(m){
+    const gidMatch = url.match(/[?#&]gid=([0-9]+)/);
+    const gid = gidMatch ? gidMatch[1] : '0';
+    return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${gid}`;
+  }
+  return url; // fall back to whatever was pasted
+}
+
+// Minimal CSV parser — handles quoted fields, escaped quotes ("") and
+// commas/newlines inside quotes, which is all Google Sheets' CSV export
+// ever produces. Not a general-purpose CSV library, deliberately kept
+// small since this is the only place in the app that needs one.
+function parseCsv(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else inQuotes = false;
+      }else field += c;
+    }else{
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field=''; }
+      else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c === '\r'){ /* skip, \r\n handled by the \n branch */ }
+      else field += c;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  if(!rows.length) return [];
+  const headers = rows[0].map(h=> h.trim().toLowerCase());
+  return rows.slice(1).filter(r=> r.some(c=>c.trim()!=='')).map(r=>{
+    const obj = {};
+    headers.forEach((h,i)=> obj[h] = (r[i]||'').trim());
+    return obj;
+  });
+}
+
+// Fetches and parses the awardees Google Sheet live — called fresh every
+// time the Results page loads, so any edit made directly in the Sheet
+// shows up on the site with no re-upload and no admin action needed.
+async function fetchAwardeesFromSheet(){
+  const settings = await getSettings();
+  const csvUrl = toSheetCsvUrl(settings.resultsSheetUrl);
+  if(!csvUrl) return {ok:false, reason:'not-configured', rows:[]};
+  try{
+    const res = await fetch(csvUrl, {cache:'no-store'});
+    if(!res.ok) return {ok:false, reason:'fetch-failed', rows:[]};
+    const text = await res.text();
+    const parsed = parseCsv(text);
+    const rows = parsed.map(r=>({
+      name: r.name || r['full name'] || '',
+      sport: r.sport || '',
+      event: r.event || '',
+      category: r.category || '',
+      award: r.award || r.position || r.result || '',
+    })).filter(r=>r.name);
+    return {ok:true, rows};
+  }catch(e){
+    console.error('sheet fetch failed', e);
+    return {ok:false, reason:'fetch-failed', rows:[]};
+  }
 }
 
 /* ---------- Admin auth (real Supabase Auth — email + password) ---------- */
@@ -1735,13 +1820,22 @@ async function renderResults(){
   const searchInput = document.getElementById('resSearchInput');
   const resultsHost = document.getElementById('resSearchResults');
   let allAwardees = [];
-  tFetchAll('awardees', 'uploaded_at', false).then(rows=>{
-    allAwardees = rows;
-  }).catch(()=>{});
+  let sheetStatus = 'loading'; // 'loading' | 'ok' | 'not-configured' | 'fetch-failed'
+  fetchAwardeesFromSheet().then(res=>{
+    sheetStatus = res.ok ? 'ok' : res.reason;
+    allAwardees = res.rows;
+    runSearch(); // in case the visitor already typed something while this was loading
+  });
 
   function runSearch(){
     const q = searchInput.value.trim().toLowerCase();
     if(!q){ resultsHost.innerHTML = ''; return; }
+    if(sheetStatus === 'loading'){ resultsHost.innerHTML = `<div class="loading-dots">Searching…</div>`; return; }
+    if(sheetStatus === 'not-configured'){ resultsHost.innerHTML = ''; return; } // no sheet linked yet — search silently does nothing
+    if(sheetStatus === 'fetch-failed'){
+      resultsHost.innerHTML = `<div class="empty-state"><p>Couldn't load the results list right now — please try again in a moment, or contact the admin below.</p></div>`;
+      return;
+    }
     const matches = allAwardees.filter(a=> (a.name||'').toLowerCase().includes(q));
     if(!matches.length){
       resultsHost.innerHTML = `<div class="empty-state"><p>No awards found for "${esc(searchInput.value.trim())}". Names are matched as entered by the admin — try a different spelling, or check with the admin below.</p></div>`;
@@ -4052,13 +4146,14 @@ async function adminPhotos(){
 
 /* ---------- Admin: Results & Awardees ---------- */
 // Two independent pieces on one screen: (1) a list of published results
-// PDFs anyone can download from the public Results page, and (2) parsed
-// rows from an admin-uploaded Excel sheet that power the name-search on
-// that same page. Re-uploading the Excel appends more rows rather than
-// replacing — "Clear All Awardees" is the explicit way to start over, so
-// a partial/wrong upload can't silently wipe out a good one.
+// PDFs anyone can download from the public Results page, and (2) a link
+// to a Google Sheet ("Publish to web" -> CSV) that IS the awardee list —
+// nothing is copied into the database. The public Results page fetches
+// that Sheet live on every visit, so editing the Sheet directly is all
+// it takes to update what visitors see; there is no re-upload step.
 async function adminResults(){
   const main = document.getElementById('adminMain');
+  const settings = await getSettings();
   main.innerHTML = `
     <h3 class="h-md" style="margin-bottom:14px;">Upload Results PDF</h3>
     <p class="hint" style="margin-bottom:16px;">This appears on the public Results page for anyone to download. You can upload more than one (e.g. one per sport).</p>
@@ -4073,22 +4168,29 @@ async function adminResults(){
     <h3 class="h-md" style="margin-bottom:14px;">Uploaded Results PDFs</h3>
     <div id="resFileListAdmin" style="margin-bottom:44px;"><div class="loading-dots">Loading…</div></div>
 
-    <h3 class="h-md" style="margin-bottom:14px;">Upload Awardees Excel (for name search)</h3>
-    <p class="hint" style="margin-bottom:16px;">Excel file with columns: <strong>Name</strong> (required), <strong>Sport</strong>, <strong>Event</strong>, <strong>Category</strong>, <strong>Award</strong>. Column names are matched loosely (not case-sensitive). Re-uploading adds to the existing list — it doesn't replace it.</p>
-    <div class="form-card" style="max-width:520px;padding:22px;margin-bottom:20px;">
+    <h3 class="h-md" style="margin-bottom:14px;">Awardees — Google Sheet (for name search)</h3>
+    <p class="hint" style="margin-bottom:16px;">
+      Paste the link to a Google Sheet published to the web as CSV. The public Results page reads this Sheet live —
+      any edit you make in Google Sheets (add a row, fix a typo, delete an award) shows up on the site immediately, with nothing to re-upload here.
+    </p>
+    <div class="form-card" style="max-width:640px;padding:22px;margin-bottom:20px;">
       <div class="field">
-        <label>Excel File</label>
-        <div class="upload-box" id="resXlsBox"><p class="mono" style="font-size:12px;color:var(--slate);">📎 Click to choose an .xlsx/.xls file</p><input type="file" id="resXlsInput" accept=".xlsx,.xls" style="display:none;"></div>
+        <label>Google Sheet link</label>
+        <input type="text" id="resSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?output=csv" value="${esc(settings.resultsSheetUrl || '')}">
       </div>
-      <button class="btn btn-primary btn-sm" id="resXlsAddBtn">Upload &amp; Import Rows</button>
-      <div id="resXlsMsg"></div>
+      <button class="btn btn-primary btn-sm" id="resSheetSaveBtn">Save Link</button>
+      <button class="btn btn-outline btn-sm" id="resSheetTestBtn" style="margin-left:8px;">Test Link</button>
+      <div id="resSheetMsg" style="margin-top:10px;"></div>
+      <p class="hint" style="margin-top:14px;">
+        In Google Sheets: <strong>File → Share → Publish to web</strong> → select the sheet tab → format <strong>Comma-separated values (.csv)</strong> → Publish, then paste that link above.
+        First row must be headers: <strong>Name, Sport, Event, Category, Award</strong> (any order, not case-sensitive).
+      </p>
     </div>
-    <button class="btn-del btn-sm" id="resClearAwardeesBtn" style="margin-bottom:14px;">Clear All Awardees</button>
-    <h3 class="h-md" style="margin-bottom:14px;">Imported Awardees (<span id="resAwardeeCount">0</span>)</h3>
-    <div id="resAwardeeList"><div class="loading-dots">Loading…</div></div>
+    <h3 class="h-md" style="margin-bottom:14px;">Live Preview (<span id="resSheetCount">–</span> rows)</h3>
+    <div id="resSheetPreview"><div class="loading-dots">Loading…</div></div>
   `;
 
-  // --- PDF upload ---
+  // --- PDF upload (unchanged) ---
   let resFile = null;
   const fileBox = document.getElementById('resFileBox');
   const fileInput = document.getElementById('resFileInput');
@@ -4139,95 +4241,82 @@ async function adminResults(){
   }
   loadFileList();
 
-  // --- Excel awardees upload ---
-  let resXlsFile = null;
-  const xlsBox = document.getElementById('resXlsBox');
-  const xlsInput = document.getElementById('resXlsInput');
-  xlsBox.addEventListener('click', ()=>xlsInput.click());
-  xlsInput.addEventListener('change', ()=>{
-    const f = xlsInput.files[0]; if(!f) return;
-    resXlsFile = f;
-    xlsBox.innerHTML = `<p class="mono" style="font-size:12px;color:var(--green);">✓ ${esc(f.name)}</p>`;
-    xlsBox.addEventListener('click', ()=>xlsInput.click());
-  });
-
-  // Matches column headers loosely — organisers won't always spell/case
-  // them the same way, so this looks for the first header that contains
-  // each expected keyword rather than requiring an exact match.
-  function pickCol(row, keywords){
-    const keys = Object.keys(row);
-    for(const kw of keywords){
-      const hit = keys.find(k=> k.toLowerCase().replace(/[^a-z]/g,'').includes(kw));
-      if(hit) return row[hit];
+  // --- Google Sheet link ---
+  async function loadSheetPreview(){
+    const countEl = document.getElementById('resSheetCount');
+    const previewEl = document.getElementById('resSheetPreview');
+    countEl.textContent = '–';
+    previewEl.innerHTML = `<div class="loading-dots">Loading…</div>`;
+    const res = await fetchAwardeesFromSheet();
+    if(!res.ok){
+      countEl.textContent = '0';
+      previewEl.innerHTML = res.reason === 'not-configured'
+        ? `<div class="empty-state"><p>No Google Sheet linked yet — paste a link above and save.</p></div>`
+        : `<div class="empty-state"><p style="color:var(--maroon);">Couldn't load that Sheet. Make sure it's published to the web as CSV (File → Share → Publish to web), then Test Link again.</p></div>`;
+      return;
     }
-    return '';
-  }
-
-  document.getElementById('resXlsAddBtn').addEventListener('click', async ()=>{
-    if(!resXlsFile){ toast('Choose an Excel file first', 'err'); return; }
-    const btn = document.getElementById('resXlsAddBtn');
-    const msg = document.getElementById('resXlsMsg');
-    btn.disabled = true; btn.textContent = 'Reading file…';
-    msg.innerHTML = '';
-    try{
-      const buf = await resXlsFile.arrayBuffer();
-      const wb = XLSX.read(buf, {type:'array'});
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
-      if(!rows.length){ msg.innerHTML = `<p class="hint" style="color:var(--maroon);">No rows found in that sheet.</p>`; return; }
-      const parsed = rows.map(r=>({
-        name: String(pickCol(r, ['name'])||'').trim(),
-        sport: String(pickCol(r, ['sport'])||'').trim() || null,
-        event: String(pickCol(r, ['event'])||'').trim() || null,
-        category: String(pickCol(r, ['categ'])||'').trim() || null,
-        award: String(pickCol(r, ['award','position','result'])||'').trim() || null,
-      })).filter(r=>r.name);
-      if(!parsed.length){ msg.innerHTML = `<p class="hint" style="color:var(--maroon);">Couldn't find a "Name" column — check the sheet's headers and try again.</p>`; return; }
-      btn.textContent = `Importing ${parsed.length} rows…`;
-      const {error} = await sb.from('awardees').insert(parsed);
-      if(error){ console.error(error); msg.innerHTML = `<p class="hint" style="color:var(--maroon);">Import failed — try again.</p>`; return; }
-      toast(`Imported ${parsed.length} awardee rows`, 'ok');
-      adminResults();
-    }catch(e){
-      console.error(e);
-      msg.innerHTML = `<p class="hint" style="color:var(--maroon);">Could not read that file — make sure it's a valid .xlsx/.xls file.</p>`;
-    }finally{
-      btn.disabled = false; btn.textContent = 'Upload & Import Rows';
+    countEl.textContent = res.rows.length;
+    if(!res.rows.length){
+      previewEl.innerHTML = `<div class="empty-state"><p>Sheet loaded, but no rows found — check that row 1 has headers and there's at least one data row below it.</p></div>`;
+      return;
     }
-  });
-
-  document.getElementById('resClearAwardeesBtn').addEventListener('click', async ()=>{
-    if(!confirm('Remove ALL imported awardee rows? This does not delete any PDFs, only the searchable name list.')) return;
-    const {error} = await sb.from('awardees').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    if(error){ console.error(error); toast('Could not clear — try again', 'err'); return; }
-    toast('Awardee list cleared', 'info');
-    adminResults();
-  });
-
-  const awardees = await tFetchAll('awardees', 'uploaded_at', false);
-  document.getElementById('resAwardeeCount').textContent = awardees.length;
-  const awHost = document.getElementById('resAwardeeList');
-  if(!awardees.length){ awHost.innerHTML = `<div class="empty-state"><p>No awardees imported yet.</p></div>`; }
-  else{
-    awHost.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
-      <tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Name</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Sport</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Event</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Category</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Award</th><th></th></tr>
-      ${awardees.map(a=>`<tr>
+    previewEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+      <tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Name</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Sport</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Event</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Category</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Award</th></tr>
+      ${res.rows.map(a=>`<tr>
         <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.name)}</td>
         <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.sport||'')}</td>
         <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.event||'')}</td>
         <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.category||'')}</td>
         <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.award||'')}</td>
-        <td style="padding:8px;border-bottom:1px solid var(--line);"><button class="btn-del btn-sm" data-del-aw="${a.id}">✕</button></td>
       </tr>`).join('')}
     </table></div>`;
-    awHost.querySelectorAll('[data-del-aw]').forEach(el=>{
-      el.addEventListener('click', async ()=>{
-        await tDelete('awardees', el.dataset.delAw);
-        toast('Removed', 'info');
-        adminResults();
-      });
-    });
   }
+
+  document.getElementById('resSheetSaveBtn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('resSheetSaveBtn');
+    const msg = document.getElementById('resSheetMsg');
+    const val = document.getElementById('resSheetUrl').value.trim();
+    btn.disabled = true; btn.textContent = 'Saving…';
+    await saveSettings({resultsSheetUrl: val});
+    btn.disabled = false; btn.textContent = 'Save Link';
+    msg.innerHTML = `<p class="hint" style="color:var(--green);">Saved.</p>`;
+    loadSheetPreview();
+  });
+  document.getElementById('resSheetTestBtn').addEventListener('click', async ()=>{
+    // Tests whatever's currently typed in the box, even if it hasn't
+    // been saved yet — lets an admin sanity-check a link before saving it.
+    const val = document.getElementById('resSheetUrl').value.trim();
+    const msg = document.getElementById('resSheetMsg');
+    const countEl = document.getElementById('resSheetCount');
+    const previewEl = document.getElementById('resSheetPreview');
+    msg.innerHTML = `<p class="hint">Testing…</p>`;
+    const csvUrl = toSheetCsvUrl(val);
+    if(!csvUrl){ msg.innerHTML = `<p class="hint" style="color:var(--maroon);">Paste a link first.</p>`; return; }
+    try{
+      const r = await fetch(csvUrl, {cache:'no-store'});
+      if(!r.ok){ msg.innerHTML = `<p class="hint" style="color:var(--maroon);">Couldn't load that link (HTTP ${r.status}). Make sure it's published to the web as CSV.</p>`; return; }
+      const text = await r.text();
+      const rows = parseCsv(text);
+      msg.innerHTML = `<p class="hint" style="color:var(--green);">Looks good — found ${rows.length} row${rows.length===1?'':'s'}. Click Save Link to use it on the site.</p>`;
+      countEl.textContent = rows.length;
+      const mapped = rows.map(r2=>({name:r2.name||'', sport:r2.sport||'', event:r2.event||'', category:r2.category||'', award:r2.award||r2.position||r2.result||''})).filter(r2=>r2.name);
+      previewEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+        <tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Name</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Sport</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Event</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Category</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Award</th></tr>
+        ${mapped.map(a=>`<tr>
+          <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.name)}</td>
+          <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.sport)}</td>
+          <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.event)}</td>
+          <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.category)}</td>
+          <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.award)}</td>
+        </tr>`).join('')}
+      </table></div>`;
+    }catch(e){
+      console.error(e);
+      msg.innerHTML = `<p class="hint" style="color:var(--maroon);">Couldn't load that link — double check it's published to the web as CSV.</p>`;
+    }
+  });
+
+  loadSheetPreview();
 }
 
 /* ---------- Admin: Gallery ---------- */

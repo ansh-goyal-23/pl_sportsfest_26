@@ -101,9 +101,16 @@ create table if not exists settings (
   -- shown instead of a generated one when set — some banks' UPI apps
   -- handle a real bank QR more reliably than a generated collect-request
   -- QR code.
-  payment_qr_path text
+  payment_qr_path text,
+  -- Link to a Google Sheet published to the web as CSV (Admin -> Results).
+  -- The public Results page fetches this Sheet live and searches it —
+  -- nothing about awardees is stored in this database. The `awardees`
+  -- table further down is legacy from an earlier Excel-upload version of
+  -- this feature and is no longer read by the site; safe to ignore/drop.
+  results_sheet_url text
 );
 insert into settings (id, upi_id) values ('main', '') on conflict (id) do nothing;
+alter table settings add column if not exists results_sheet_url text;
 
 -- Lets organisers close (or schedule an automatic close for) registration
 -- on a specific category, from Admin → Registration Status — no code
