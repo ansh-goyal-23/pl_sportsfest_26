@@ -340,6 +340,17 @@ textarea{resize:vertical;min-height:90px;}
 .stat-box{background:var(--cream-dim);border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;min-width:120px;}
 .stat-box .n{font-family:'Oswald';font-weight:700;font-size:30px;color:var(--gold);}
 .stat-box .l{font-family:'IBM Plex Mono';font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--slate);margin-top:4px;}
+.home-slideshow{margin:10px 0 0;}
+.slideshow-viewport{position:relative;width:100%;aspect-ratio:16/7;min-height:220px;border-radius:var(--radius);overflow:hidden;background:var(--ink);border:1px solid var(--line);}
+.slideshow-viewport .slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s ease;}
+.slideshow-viewport .slide.active{opacity:1;}
+.slide-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(11,20,31,.55);color:var(--bright);border:none;width:38px;height:38px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
+.slide-nav.prev{left:14px;}
+.slide-nav.next{right:14px;}
+.slide-dots{position:absolute;bottom:14px;left:0;right:0;display:flex;justify-content:center;gap:8px;}
+.slide-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer;}
+.slide-dot.active{background:var(--gold-light);}
+@media(max-width:640px){.slideshow-viewport{aspect-ratio:4/3;}.slide-nav{width:32px;height:32px;font-size:18px;}}
 @media print{.topbar,.ticker-wrap,footer,.no-print{display:none;}}
 </style>
 </head>
@@ -1211,7 +1222,9 @@ const NAV_ITEMS = [
   {route:'sports', label:'Sports'},
   {route:'schedule', label:'Schedule'},
   {route:'rules', label:'Rules'},
-  {route:'fixtures', label:'Fixtures & Results'},
+  {route:'fixtures', label:'Fixtures'},
+  {route:'results', label:'Results'},
+  {route:'gallery', label:'Gallery'},
   {route:'updates', label:'Updates'},
   {route:'sponsors', label:'Sponsors'},
   {route:'contact', label:'Contact'},
@@ -1263,7 +1276,9 @@ function renderShell(bodyHtml){
           <div>
             <h4>Explore</h4>
             <a class="flink" href="#sports">All Sports</a>
-            <a class="flink" href="#fixtures">Fixtures &amp; Results</a>
+            <a class="flink" href="#fixtures">Fixtures</a>
+            <a class="flink" href="#results">Results</a>
+            <a class="flink" href="#gallery">Gallery</a>
             <a class="flink" href="#updates">Updates</a>
             <a class="flink" href="#sponsors">Sponsors</a>
             <a class="flink" href="#register">Register</a>
@@ -1351,6 +1366,10 @@ async function renderHome(){
       <div class="lane-rule gold"></div>
     </section>
 
+    <section class="wrap" id="homeSlideshowSection" style="display:none;">
+      <div id="homeSlideshow" class="home-slideshow"></div>
+    </section>
+
     <section class="wrap">
       <div class="section-head">
         <div>
@@ -1393,6 +1412,46 @@ async function renderHome(){
   grid.innerHTML = SPORTS.map(sportCardHtml).join('');
   wireSportCards(grid);
   document.getElementById('heroStatusBtn').addEventListener('click', ()=>openStatusModal());
+  initHomeSlideshow();
+}
+
+// Fetches gallery photos and, if there are any, shows and starts an
+// auto-rotating slideshow between the hero and the Overview section.
+// Stays hidden entirely if the gallery is empty, so an event with no
+// photos yet doesn't show a blank/broken-looking strip on the home page.
+let homeSlideshowTimer = null;
+async function initHomeSlideshow(){
+  if(homeSlideshowTimer){ clearInterval(homeSlideshowTimer); homeSlideshowTimer = null; }
+  const section = document.getElementById('homeSlideshowSection');
+  const host = document.getElementById('homeSlideshow');
+  if(!section || !host) return;
+  let photos = [];
+  try{ photos = await tFetchAll('gallery_photos', 'created_at', false); }catch(e){ console.error(e); }
+  if(!photos.length){ section.style.display = 'none'; return; }
+  section.style.display = '';
+  let active = 0;
+  host.innerHTML = `
+    <div class="slideshow-viewport">
+      ${photos.map((p,i)=>`<img src="${p.url}" class="slide ${i===0?'active':''}" data-i="${i}">`).join('')}
+      <button class="slide-nav prev" type="button" aria-label="Previous photo">‹</button>
+      <button class="slide-nav next" type="button" aria-label="Next photo">›</button>
+      <div class="slide-dots">${photos.map((p,i)=>`<span class="slide-dot ${i===0?'active':''}" data-i="${i}"></span>`).join('')}</div>
+    </div>`;
+  const slides = Array.from(host.querySelectorAll('.slide'));
+  const dots = Array.from(host.querySelectorAll('.slide-dot'));
+  function show(i){
+    active = (i + photos.length) % photos.length;
+    slides.forEach(s=> s.classList.toggle('active', Number(s.dataset.i)===active));
+    dots.forEach(d=> d.classList.toggle('active', Number(d.dataset.i)===active));
+  }
+  host.querySelector('.slide-nav.prev').addEventListener('click', ()=>{ show(active-1); resetTimer(); });
+  host.querySelector('.slide-nav.next').addEventListener('click', ()=>{ show(active+1); resetTimer(); });
+  dots.forEach(d=> d.addEventListener('click', ()=>{ show(Number(d.dataset.i)); resetTimer(); }));
+  function resetTimer(){
+    if(homeSlideshowTimer) clearInterval(homeSlideshowTimer);
+    if(photos.length > 1) homeSlideshowTimer = setInterval(()=> show(active+1), 4500);
+  }
+  resetTimer();
 }
 
 function sportCardHtml(s){
@@ -1583,9 +1642,9 @@ async function renderFixtures(){
   renderShell(`
     <div class="detail-band">
       <div class="wrap">
-        <div class="eyebrow" style="color:var(--gold-light)">Fixtures &amp; Results</div>
-        <h1 class="h-lg" style="color:var(--bright)">Who's playing, who won</h1>
-        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Fixtures boards are posted here as they're drawn up — tap any board to view it full size. Match results and any schedule changes are posted on the Updates page.</p>
+        <div class="eyebrow" style="color:var(--gold-light)">Fixtures</div>
+        <h1 class="h-lg" style="color:var(--bright)">Who's playing</h1>
+        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Fixtures boards are posted here as they're drawn up — tap any board to view it full size. Looking for winners? Head over to the <a href="#results" style="color:var(--gold-light);text-decoration:underline;">Results</a> page.</p>
       </div>
     </div>
     <section class="wrap">
@@ -1640,6 +1699,116 @@ async function renderFixtures(){
     });
   });
 }
+
+/* =========================================================
+   PAGE: RESULTS / AWARDEES
+   ========================================================= */
+async function renderResults(){
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <div class="eyebrow" style="color:var(--gold-light)">Results</div>
+        <h1 class="h-lg" style="color:var(--bright)">Winners &amp; Awardees</h1>
+        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Search your name below to see what you won, or download the full results list. Spot something wrong? Contact the admin — details at the bottom of this page.</p>
+      </div>
+    </div>
+    <section class="wrap">
+      <div class="form-card" style="max-width:560px;padding:22px;margin-bottom:36px;">
+        <label for="resSearchInput" style="display:block;margin-bottom:8px;font-family:'Oswald';text-transform:uppercase;font-size:13px;letter-spacing:.03em;">🔍 Search your name</label>
+        <input type="text" id="resSearchInput" placeholder="Type your name…" autocomplete="off">
+      </div>
+      <div id="resSearchResults"></div>
+
+      <h2 class="h-md" style="margin:36px 0 18px;">Download Full Results</h2>
+      <div id="resFileList"><div class="loading-dots">Loading…</div></div>
+
+      <div class="msg-banner" style="margin-top:36px;">
+        ⚠️ <strong>Found an inconsistency?</strong> If your name is missing, misspelled, or an award looks wrong, please contact the admin —
+        ${CONTACTS.map(c=>`<a href="tel:${c.phone}" style="color:inherit;text-decoration:underline;">${esc(c.name)} (${c.phone})</a>`).join(', ')}.
+      </div>
+    </section>
+  `);
+
+  const searchInput = document.getElementById('resSearchInput');
+  const resultsHost = document.getElementById('resSearchResults');
+  let allAwardees = [];
+  tFetchAll('awardees', 'uploaded_at', false).then(rows=>{
+    allAwardees = rows;
+  }).catch(()=>{});
+
+  function runSearch(){
+    const q = searchInput.value.trim().toLowerCase();
+    if(!q){ resultsHost.innerHTML = ''; return; }
+    const matches = allAwardees.filter(a=> (a.name||'').toLowerCase().includes(q));
+    if(!matches.length){
+      resultsHost.innerHTML = `<div class="empty-state"><p>No awards found for "${esc(searchInput.value.trim())}". Names are matched as entered by the admin — try a different spelling, or check with the admin below.</p></div>`;
+      return;
+    }
+    resultsHost.innerHTML = `<div class="grid grid-2">${matches.map(a=>`
+      <div class="card" style="padding:16px 18px;">
+        <div class="tag">${esc(a.sport||'')}</div>
+        <h3 style="margin-top:6px;">${esc(a.name)}</h3>
+        ${a.event ? `<p style="font-size:14px;color:var(--slate);margin-top:4px;">${esc(a.event)}${a.category?' — '+esc(a.category):''}</p>` : ''}
+        ${a.award ? `<p style="margin-top:8px;font-family:'Oswald';text-transform:uppercase;color:var(--maroon);font-size:14.5px;">🏆 ${esc(a.award)}</p>` : ''}
+      </div>`).join('')}</div>`;
+  }
+  let searchTimer = null;
+  searchInput.addEventListener('input', ()=>{
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(runSearch, 150);
+  });
+
+  const fileHost = document.getElementById('resFileList');
+  const files = await tFetchAll('results_files', 'uploaded_at', false);
+  if(!files.length){
+    fileHost.innerHTML = `<div class="empty-state"><div class="em-icon">🏆</div><p>Results haven't been posted yet — check back soon.</p></div>`;
+  }else{
+    fileHost.innerHTML = files.map(f=>`
+      <div class="card" style="padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+          <strong>📕 ${esc(f.label || f.file_name)}</strong>
+          ${f.label ? `<div class="hint" style="margin-top:2px;">${esc(f.file_name)}</div>` : ''}
+          <div class="hint" style="margin-top:2px;">Posted ${fmtDateTime(f.uploaded_at)}</div>
+        </div>
+        <a class="btn btn-outline btn-sm" href="${publicUrl('results-pdf', f.file_path)}" download target="_blank" rel="noopener">⬇ Download</a>
+      </div>`).join('');
+  }
+}
+
+/* =========================================================
+   PAGE: GALLERY
+   ========================================================= */
+async function renderGallery(){
+  renderShell(`
+    <div class="detail-band">
+      <div class="wrap">
+        <div class="eyebrow" style="color:var(--gold-light)">Gallery</div>
+        <h1 class="h-lg" style="color:var(--bright)">Moments from the Fest</h1>
+        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Photos from across the Fest — tap any photo to view it full size.</p>
+      </div>
+    </div>
+    <section class="wrap">
+      <div id="galList"><div class="loading-dots">Loading…</div></div>
+    </section>
+  `);
+  const host = document.getElementById('galList');
+  const list = await tFetchAll('gallery_photos', 'created_at', false);
+  if(!list.length){
+    host.innerHTML = `<div class="empty-state"><div class="em-icon">📷</div><p>No photos in the gallery yet — check back soon.</p></div>`;
+    return;
+  }
+  host.innerHTML = `<div class="grid grid-3">${list.map(p=>`
+    <div class="card gallery-card" data-full="${p.url}" data-caption="${esc(p.caption||'')}" style="padding:0;overflow:hidden;cursor:pointer;">
+      <img src="${p.url}" style="width:100%;display:block;">
+      ${p.caption ? `<div style="padding:10px 14px;"><p style="font-size:13px;">${esc(p.caption)}</p></div>` : ''}
+    </div>`).join('')}</div>`;
+  host.querySelectorAll('[data-full]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      openModal(`<button class="close-x" id="modalClose">✕</button><img src="${el.dataset.full}">${el.dataset.caption?`<p style="margin-top:10px;color:var(--slate);">${el.dataset.caption}</p>`:''}<a href="${el.dataset.full}" download target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:block;text-align:center;margin-top:14px;">⬇ Download</a>`);
+    });
+  });
+}
+
 
 /* =========================================================
    PAGE: UPDATES
@@ -2732,7 +2901,9 @@ const ADMIN_SECTIONS = [
   {id:'livescoring', label:'Live Scoring'},
   {id:'analytics', label:'Site Analytics'},
   {id:'updates', label:'Updates & Announcements'},
-  {id:'fixtures', label:'Fixtures & Results'},
+  {id:'fixtures', label:'Fixtures'},
+  {id:'results', label:'Results & Awardees'},
+  {id:'gallery', label:'Gallery'},
   {id:'sponsors', label:'Sponsorships'},
   {id:'photos', label:'Photos & Highlights'},
   {id:'documents', label:'Documents'},
@@ -2776,6 +2947,8 @@ async function loadAdminSection(){
     analytics: adminAnalytics,
     updates: adminUpdates,
     fixtures: adminFixtures,
+    results: adminResults,
+    gallery: adminGallery,
     sponsors: adminSponsors,
     photos: adminPhotos,
     documents: adminDocuments,
@@ -3866,6 +4039,259 @@ async function adminPhotos(){
   });
 }
 
+/* ---------- Admin: Results & Awardees ---------- */
+// Two independent pieces on one screen: (1) a list of published results
+// PDFs anyone can download from the public Results page, and (2) parsed
+// rows from an admin-uploaded Excel sheet that power the name-search on
+// that same page. Re-uploading the Excel appends more rows rather than
+// replacing — "Clear All Awardees" is the explicit way to start over, so
+// a partial/wrong upload can't silently wipe out a good one.
+async function adminResults(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `
+    <h3 class="h-md" style="margin-bottom:14px;">Upload Results PDF</h3>
+    <p class="hint" style="margin-bottom:16px;">This appears on the public Results page for anyone to download. You can upload more than one (e.g. one per sport).</p>
+    <div class="form-card" style="max-width:520px;padding:22px;margin-bottom:36px;">
+      <div class="field"><label>Label (optional)</label><input type="text" id="resLabel" placeholder="e.g. Badminton — Final Results"></div>
+      <div class="field">
+        <label>PDF File</label>
+        <div class="upload-box" id="resFileBox"><p class="mono" style="font-size:12px;color:var(--slate);">📎 Click to choose a PDF</p><input type="file" id="resFileInput" accept=".pdf" style="display:none;"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="resFileAddBtn">Upload PDF</button>
+    </div>
+    <h3 class="h-md" style="margin-bottom:14px;">Uploaded Results PDFs</h3>
+    <div id="resFileListAdmin" style="margin-bottom:44px;"><div class="loading-dots">Loading…</div></div>
+
+    <h3 class="h-md" style="margin-bottom:14px;">Upload Awardees Excel (for name search)</h3>
+    <p class="hint" style="margin-bottom:16px;">Excel file with columns: <strong>Name</strong> (required), <strong>Sport</strong>, <strong>Event</strong>, <strong>Category</strong>, <strong>Award</strong>. Column names are matched loosely (not case-sensitive). Re-uploading adds to the existing list — it doesn't replace it.</p>
+    <div class="form-card" style="max-width:520px;padding:22px;margin-bottom:20px;">
+      <div class="field">
+        <label>Excel File</label>
+        <div class="upload-box" id="resXlsBox"><p class="mono" style="font-size:12px;color:var(--slate);">📎 Click to choose an .xlsx/.xls file</p><input type="file" id="resXlsInput" accept=".xlsx,.xls" style="display:none;"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="resXlsAddBtn">Upload &amp; Import Rows</button>
+      <div id="resXlsMsg"></div>
+    </div>
+    <button class="btn-del btn-sm" id="resClearAwardeesBtn" style="margin-bottom:14px;">Clear All Awardees</button>
+    <h3 class="h-md" style="margin-bottom:14px;">Imported Awardees (<span id="resAwardeeCount">0</span>)</h3>
+    <div id="resAwardeeList"><div class="loading-dots">Loading…</div></div>
+  `;
+
+  // --- PDF upload ---
+  let resFile = null;
+  const fileBox = document.getElementById('resFileBox');
+  const fileInput = document.getElementById('resFileInput');
+  fileBox.addEventListener('click', ()=>fileInput.click());
+  fileInput.addEventListener('change', ()=>{
+    const f = fileInput.files[0]; if(!f) return;
+    resFile = f;
+    fileBox.innerHTML = `<p class="mono" style="font-size:12px;color:var(--green);">✓ ${esc(f.name)} (${(f.size/1024).toFixed(0)} KB)</p>`;
+    fileBox.addEventListener('click', ()=>fileInput.click());
+  });
+  document.getElementById('resFileAddBtn').addEventListener('click', async ()=>{
+    if(!resFile){ toast('Choose a PDF first', 'err'); return; }
+    const btn = document.getElementById('resFileAddBtn');
+    btn.disabled = true; btn.textContent = 'Uploading…';
+    const path = await uploadRawFile('results-pdf', resFile);
+    btn.disabled = false; btn.textContent = 'Upload PDF';
+    if(!path){ toast('Upload failed — try again', 'err'); return; }
+    const label = document.getElementById('resLabel').value.trim();
+    const {ok, error} = await tInsert('results_files', {label: label || null, file_name: resFile.name, file_path: path});
+    if(!ok){ console.error(error); toast('Could not save — try again', 'err'); return; }
+    toast('Results PDF uploaded', 'ok');
+    adminResults();
+  });
+
+  async function loadFileList(){
+    const list = await tFetchAll('results_files', 'uploaded_at', false);
+    const host = document.getElementById('resFileListAdmin');
+    if(!list.length){ host.innerHTML = `<div class="empty-state"><p>No results PDFs uploaded yet.</p></div>`; return; }
+    host.innerHTML = list.map(f=>`
+      <div class="card" style="padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+          <strong>📕 ${esc(f.label || f.file_name)}</strong>
+          ${f.label ? `<div class="hint" style="margin-top:2px;">${esc(f.file_name)}</div>` : ''}
+          <div class="hint" style="margin-top:2px;">Posted ${fmtDateTime(f.uploaded_at)}</div>
+        </div>
+        <button class="btn-del btn-sm" data-del-res="${f.id}" data-path="${f.file_path}">Delete</button>
+      </div>`).join('');
+    host.querySelectorAll('[data-del-res]').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        if(!confirm('Delete this results PDF?')) return;
+        const {error: storageError} = await sb.storage.from('results-pdf').remove([el.dataset.path]);
+        if(storageError){ console.error(storageError); toast("Couldn't remove the file — try again", 'err'); return; }
+        await tDelete('results_files', el.dataset.delRes);
+        toast('Deleted', 'info');
+        loadFileList();
+      });
+    });
+  }
+  loadFileList();
+
+  // --- Excel awardees upload ---
+  let resXlsFile = null;
+  const xlsBox = document.getElementById('resXlsBox');
+  const xlsInput = document.getElementById('resXlsInput');
+  xlsBox.addEventListener('click', ()=>xlsInput.click());
+  xlsInput.addEventListener('change', ()=>{
+    const f = xlsInput.files[0]; if(!f) return;
+    resXlsFile = f;
+    xlsBox.innerHTML = `<p class="mono" style="font-size:12px;color:var(--green);">✓ ${esc(f.name)}</p>`;
+    xlsBox.addEventListener('click', ()=>xlsInput.click());
+  });
+
+  // Matches column headers loosely — organisers won't always spell/case
+  // them the same way, so this looks for the first header that contains
+  // each expected keyword rather than requiring an exact match.
+  function pickCol(row, keywords){
+    const keys = Object.keys(row);
+    for(const kw of keywords){
+      const hit = keys.find(k=> k.toLowerCase().replace(/[^a-z]/g,'').includes(kw));
+      if(hit) return row[hit];
+    }
+    return '';
+  }
+
+  document.getElementById('resXlsAddBtn').addEventListener('click', async ()=>{
+    if(!resXlsFile){ toast('Choose an Excel file first', 'err'); return; }
+    const btn = document.getElementById('resXlsAddBtn');
+    const msg = document.getElementById('resXlsMsg');
+    btn.disabled = true; btn.textContent = 'Reading file…';
+    msg.innerHTML = '';
+    try{
+      const buf = await resXlsFile.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+      if(!rows.length){ msg.innerHTML = `<p class="hint" style="color:var(--maroon);">No rows found in that sheet.</p>`; return; }
+      const parsed = rows.map(r=>({
+        name: String(pickCol(r, ['name'])||'').trim(),
+        sport: String(pickCol(r, ['sport'])||'').trim() || null,
+        event: String(pickCol(r, ['event'])||'').trim() || null,
+        category: String(pickCol(r, ['categ'])||'').trim() || null,
+        award: String(pickCol(r, ['award','position','result'])||'').trim() || null,
+      })).filter(r=>r.name);
+      if(!parsed.length){ msg.innerHTML = `<p class="hint" style="color:var(--maroon);">Couldn't find a "Name" column — check the sheet's headers and try again.</p>`; return; }
+      btn.textContent = `Importing ${parsed.length} rows…`;
+      const {error} = await sb.from('awardees').insert(parsed);
+      if(error){ console.error(error); msg.innerHTML = `<p class="hint" style="color:var(--maroon);">Import failed — try again.</p>`; return; }
+      toast(`Imported ${parsed.length} awardee rows`, 'ok');
+      adminResults();
+    }catch(e){
+      console.error(e);
+      msg.innerHTML = `<p class="hint" style="color:var(--maroon);">Could not read that file — make sure it's a valid .xlsx/.xls file.</p>`;
+    }finally{
+      btn.disabled = false; btn.textContent = 'Upload & Import Rows';
+    }
+  });
+
+  document.getElementById('resClearAwardeesBtn').addEventListener('click', async ()=>{
+    if(!confirm('Remove ALL imported awardee rows? This does not delete any PDFs, only the searchable name list.')) return;
+    const {error} = await sb.from('awardees').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if(error){ console.error(error); toast('Could not clear — try again', 'err'); return; }
+    toast('Awardee list cleared', 'info');
+    adminResults();
+  });
+
+  const awardees = await tFetchAll('awardees', 'uploaded_at', false);
+  document.getElementById('resAwardeeCount').textContent = awardees.length;
+  const awHost = document.getElementById('resAwardeeList');
+  if(!awardees.length){ awHost.innerHTML = `<div class="empty-state"><p>No awardees imported yet.</p></div>`; }
+  else{
+    awHost.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+      <tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Name</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Sport</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Event</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Category</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Award</th><th></th></tr>
+      ${awardees.map(a=>`<tr>
+        <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.name)}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.sport||'')}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.event||'')}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.category||'')}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.award||'')}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--line);"><button class="btn-del btn-sm" data-del-aw="${a.id}">✕</button></td>
+      </tr>`).join('')}
+    </table></div>`;
+    awHost.querySelectorAll('[data-del-aw]').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        await tDelete('awardees', el.dataset.delAw);
+        toast('Removed', 'info');
+        adminResults();
+      });
+    });
+  }
+}
+
+/* ---------- Admin: Gallery ---------- */
+// Multi-file upload for the public Gallery page and the Home page
+// slideshow. Deliberately separate from "Photos & Highlights" above,
+// which posts to the Updates page — gallery uploads never touch Updates.
+async function adminGallery(){
+  const main = document.getElementById('adminMain');
+  main.innerHTML = `
+    <h3 class="h-md" style="margin-bottom:18px;">Add Gallery Photos</h3>
+    <div class="form-card" style="max-width:640px;padding:22px;margin-bottom:36px;">
+      <div class="field">
+        <label>Photos (select multiple at once)</label>
+        <div class="upload-box" id="galBox"><p class="mono" style="font-size:12px;color:var(--slate);">📎 Click to choose one or more photos</p><input type="file" id="galInput" accept="image/*" multiple style="display:none;"></div>
+      </div>
+      <div class="field"><label>Caption (optional, applied to all selected photos)</label><input type="text" id="galCaption"></div>
+      <button class="btn btn-primary" id="galAddBtn">Upload Photos</button>
+      <div id="galUploadMsg"></div>
+      <p class="hint">Uploaded photos appear on the public Gallery page and cycle through the Home page slideshow.</p>
+    </div>
+    <h3 class="h-md" style="margin-bottom:18px;">All Gallery Photos</h3>
+    <div id="galListAdmin" class="grid grid-3"><div class="loading-dots">Loading…</div></div>
+  `;
+
+  let galFiles = [];
+  const box = document.getElementById('galBox');
+  const input = document.getElementById('galInput');
+  box.addEventListener('click', ()=>input.click());
+  input.addEventListener('change', ()=>{
+    galFiles = Array.from(input.files || []);
+    if(!galFiles.length) return;
+    box.innerHTML = `<p class="mono" style="font-size:12px;color:var(--green);">✓ ${galFiles.length} photo${galFiles.length>1?'s':''} selected</p>`;
+    box.addEventListener('click', ()=>input.click());
+  });
+
+  document.getElementById('galAddBtn').addEventListener('click', async ()=>{
+    if(!galFiles.length){ toast('Choose at least one photo first', 'err'); return; }
+    const btn = document.getElementById('galAddBtn');
+    const msg = document.getElementById('galUploadMsg');
+    const caption = document.getElementById('galCaption').value.trim();
+    btn.disabled = true;
+    let done = 0, failed = 0;
+    for(const f of galFiles){
+      btn.textContent = `Uploading ${done+1} of ${galFiles.length}…`;
+      const path = await uploadImage('gallery-photos', f, 'gallery');
+      if(!path){ failed++; continue; }
+      const url = publicUrl('gallery-photos', path);
+      const {ok} = await tInsert('gallery_photos', {url, caption: caption || null});
+      if(ok) done++; else failed++;
+    }
+    btn.disabled = false; btn.textContent = 'Upload Photos';
+    if(failed) msg.innerHTML = `<p class="hint" style="color:var(--maroon);">${done} uploaded, ${failed} failed — try again for the failed ones.</p>`;
+    else toast(`${done} photo${done>1?'s':''} uploaded`, 'ok');
+    adminGallery();
+  });
+
+  const list = await tFetchAll('gallery_photos', 'created_at', false);
+  const host = document.getElementById('galListAdmin');
+  if(!list.length){ host.innerHTML = `<div class="empty-state"><p>No gallery photos yet.</p></div>`; return; }
+  host.innerHTML = list.map(p=>`
+    <div class="card" style="padding:12px;">
+      <img src="${p.url}" style="margin-bottom:8px;">
+      <p style="font-size:13px;">${esc(p.caption||'')}</p>
+      <button class="btn-del" style="margin-top:8px;" data-del-gal="${p.id}">Delete</button>
+    </div>`).join('');
+  host.querySelectorAll('[data-del-gal]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      if(!confirm('Delete this photo?')) return;
+      await tDelete('gallery_photos', el.dataset.delGal);
+      toast('Deleted', 'info');
+      adminGallery();
+    });
+  });
+}
+
 /* ---------- Admin: Documents ---------- */
 // Private, admin-only reference storage — PDFs, Excel sheets, Word docs
 // for the Sports Committee's own use (planning documents, fixture
@@ -4106,6 +4532,8 @@ async function render(){
       case 'schedule': await renderSchedule(); break;
       case 'rules': await renderRulesIndex(); break;
       case 'fixtures': await renderFixtures(); break;
+      case 'results': await renderResults(); break;
+      case 'gallery': await renderGallery(); break;
       case 'updates': await renderUpdates(param); break;
       case 'sponsors': await renderSponsors(); break;
       case 'contact': await renderContact(); break;

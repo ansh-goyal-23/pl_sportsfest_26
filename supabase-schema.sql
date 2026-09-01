@@ -356,3 +356,91 @@ create policy "organisers delete payment qr" on storage.objects
 -- 4. Project Settings → API → copy the Project URL and anon public key
 --    into index.html where marked, then deploy.
 -- =========================================================
+
+-- =========================================================
+-- Results / Awardees + Gallery (added later)
+-- =========================================================
+
+-- One row per uploaded "official results" PDF (Admin -> Results). Multiple
+-- PDFs can be listed at once (e.g. one per sport, or updated versions over
+-- time) - nothing here is ever auto-deleted, organisers manage the list.
+create table if not exists results_files (
+  id uuid primary key default gen_random_uuid(),
+  label text,
+  file_name text not null,
+  file_path text not null,
+  uploaded_at timestamptz not null default now()
+);
+
+-- Parsed rows from an admin-uploaded Excel sheet of awardees, so visitors
+-- can search their own name and see what they won without having to open
+-- a PDF. Admin can upload a fresh Excel any time - each upload appends
+-- more rows (old rows are never touched unless an organiser clears them).
+create table if not exists awardees (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  sport text,
+  event text,
+  category text,
+  award text,
+  uploaded_at timestamptz not null default now()
+);
+
+-- Event photo gallery, shown on its own Gallery page and cycled through
+-- as a slideshow on the Home page. Deliberately separate from the
+-- existing `photos` table, which feeds the Updates page's
+-- photo-highlight posts - gallery uploads do NOT create Updates entries.
+create table if not exists gallery_photos (
+  id uuid primary key default gen_random_uuid(),
+  url text not null,
+  caption text,
+  created_at timestamptz not null default now()
+);
+
+alter table results_files enable row level security;
+alter table awardees enable row level security;
+alter table gallery_photos enable row level security;
+
+drop policy if exists "public read results files" on results_files;
+create policy "public read results files" on results_files for select to anon using (true);
+drop policy if exists "organisers manage results files" on results_files;
+create policy "organisers manage results files" on results_files for all to authenticated using (true) with check (true);
+
+drop policy if exists "public read awardees" on awardees;
+create policy "public read awardees" on awardees for select to anon using (true);
+drop policy if exists "organisers manage awardees" on awardees;
+create policy "organisers manage awardees" on awardees for all to authenticated using (true) with check (true);
+
+drop policy if exists "public read gallery photos" on gallery_photos;
+create policy "public read gallery photos" on gallery_photos for select to anon using (true);
+drop policy if exists "organisers manage gallery photos" on gallery_photos;
+create policy "organisers manage gallery photos" on gallery_photos for all to authenticated using (true) with check (true);
+
+-- Storage buckets: both public, since the whole point is visitors
+-- downloading the results PDF and viewing gallery photos directly.
+insert into storage.buckets (id, name, public)
+  values ('results-pdf', 'results-pdf', true)
+  on conflict (id) do nothing;
+insert into storage.buckets (id, name, public)
+  values ('gallery-photos', 'gallery-photos', true)
+  on conflict (id) do nothing;
+
+drop policy if exists "public read results pdf" on storage.objects;
+create policy "public read results pdf" on storage.objects
+  for select to anon using (bucket_id = 'results-pdf');
+drop policy if exists "organisers write results pdf" on storage.objects;
+create policy "organisers write results pdf" on storage.objects
+  for insert to authenticated with check (bucket_id = 'results-pdf');
+drop policy if exists "organisers delete results pdf" on storage.objects;
+create policy "organisers delete results pdf" on storage.objects
+  for delete to authenticated using (bucket_id = 'results-pdf');
+
+drop policy if exists "public read gallery photos storage" on storage.objects;
+create policy "public read gallery photos storage" on storage.objects
+  for select to anon using (bucket_id = 'gallery-photos');
+drop policy if exists "organisers write gallery photos" on storage.objects;
+create policy "organisers write gallery photos" on storage.objects
+  for insert to authenticated with check (bucket_id = 'gallery-photos');
+drop policy if exists "organisers delete gallery photos" on storage.objects;
+create policy "organisers delete gallery photos" on storage.objects
+  for delete to authenticated using (bucket_id = 'gallery-photos');
