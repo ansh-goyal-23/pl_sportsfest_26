@@ -351,9 +351,10 @@ textarea{resize:vertical;min-height:90px;}
 .slide-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer;}
 .slide-dot.active{background:var(--gold-light);}
 @media(max-width:640px){.slideshow-viewport{aspect-ratio:4/3;}.slide-nav{width:32px;height:32px;font-size:18px;}}
-.pdf-inline-viewer{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
-.pdf-inline-viewer iframe{width:100%;height:70vh;min-height:420px;border:none;display:block;background:#525659;}
-@media(max-width:640px){.pdf-inline-viewer iframe{height:60vh;}}
+.results-table{font-size:13.5px;}
+.results-table th,.results-table td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
+.results-table th{font-family:'Oswald';text-transform:uppercase;font-size:12px;letter-spacing:.04em;color:var(--slate);background:var(--cream-dim);}
+.results-table tbody tr:hover{background:var(--cream-dim);}
 @media print{.topbar,.ticker-wrap,footer,.no-print{display:none;}}
 </style>
 </head>
@@ -1798,7 +1799,7 @@ async function renderResults(){
       <div class="wrap">
         <div class="eyebrow" style="color:var(--gold-light)">Results</div>
         <h1 class="h-lg" style="color:var(--bright)">Winners &amp; Awardees</h1>
-        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Search your name below to see what you won, or download the full results list. Spot something wrong? Contact the admin — details at the bottom of this page.</p>
+        <p style="color:var(--slate);margin-top:10px;max-width:560px;">Search your name below to see what you won, or browse the full results list. Spot something wrong? Contact the admin — details at the bottom of this page.</p>
       </div>
     </div>
     <section class="wrap">
@@ -1808,8 +1809,11 @@ async function renderResults(){
       </div>
       <div id="resSearchResults"></div>
 
-      <h2 class="h-md" style="margin:36px 0 18px;">Download Full Results</h2>
-      <div id="resFileList"><div class="loading-dots">Loading…</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:36px 0 18px;">
+        <h2 class="h-md" style="margin:0;">Full Results</h2>
+        <button class="btn btn-outline btn-sm" id="resPrintBtn">🖨 Print / Save as PDF</button>
+      </div>
+      <div id="resFullTable"><div class="loading-dots">Loading…</div></div>
 
       <div class="msg-banner" style="margin-top:36px;">
         ⚠️ <strong>Found an inconsistency?</strong> If your name is missing, misspelled, or an award looks wrong, please contact the admin —
@@ -1820,12 +1824,15 @@ async function renderResults(){
 
   const searchInput = document.getElementById('resSearchInput');
   const resultsHost = document.getElementById('resSearchResults');
+  const tableHost = document.getElementById('resFullTable');
   let allAwardees = [];
   let sheetStatus = 'loading'; // 'loading' | 'ok' | 'not-configured' | 'fetch-failed'
+
   fetchAwardeesFromSheet().then(res=>{
     sheetStatus = res.ok ? 'ok' : res.reason;
     allAwardees = res.rows;
     runSearch(); // in case the visitor already typed something while this was loading
+    renderFullTable();
   });
 
   function runSearch(){
@@ -1857,29 +1864,66 @@ async function renderResults(){
     searchTimer = setTimeout(runSearch, 150);
   });
 
-  const fileHost = document.getElementById('resFileList');
-  const files = await tFetchAll('results_files', 'uploaded_at', false);
-  if(!files.length){
-    fileHost.innerHTML = `<div class="empty-state"><div class="em-icon">🏆</div><p>Results haven't been posted yet — check back soon.</p></div>`;
-  }else{
-    fileHost.innerHTML = files.map((f,i)=>{
-      const url = publicUrl('results-pdf', f.file_path);
-      return `
-      <div class="card" style="padding:14px 16px;margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-          <div>
-            <strong>📕 ${esc(f.label || f.file_name)}</strong>
-            ${f.label ? `<div class="hint" style="margin-top:2px;">${esc(f.file_name)}</div>` : ''}
-            <div class="hint" style="margin-top:2px;">Posted ${fmtDateTime(f.uploaded_at)}</div>
-          </div>
-          <a class="btn btn-outline btn-sm" href="${url}" download target="_blank" rel="noopener">⬇ Download</a>
-        </div>
-        <div class="pdf-inline-viewer" style="margin-top:14px;">
-          <iframe src="${url}#toolbar=1" title="${esc(f.label || f.file_name)}" loading="lazy"></iframe>
-        </div>
-      </div>`;
-    }).join('');
+  function fullResultsTableHtml(){
+    return `<div style="overflow-x:auto;"><table class="results-table" style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th>Name</th><th>Flat</th><th>Sport</th><th>Event</th><th>Category</th><th>Award</th>
+      </tr></thead>
+      <tbody>
+        ${allAwardees.map(a=>`<tr>
+          <td>${esc(a.name)}</td>
+          <td>${esc(a.flat||'')}</td>
+          <td>${esc(a.sport||'')}</td>
+          <td>${esc(a.event||'')}</td>
+          <td>${esc(a.category||'')}</td>
+          <td>${esc(a.award||'')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
   }
+
+  function renderFullTable(){
+    if(sheetStatus === 'not-configured'){
+      tableHost.innerHTML = `<div class="empty-state"><div class="em-icon">🏆</div><p>Results haven't been posted yet — check back soon.</p></div>`;
+      return;
+    }
+    if(sheetStatus === 'fetch-failed'){
+      tableHost.innerHTML = `<div class="empty-state"><p>Couldn't load the results list right now — please try again in a moment.</p></div>`;
+      return;
+    }
+    if(!allAwardees.length){
+      tableHost.innerHTML = `<div class="empty-state"><p>Results are set up, but no rows were found — check back soon.</p></div>`;
+      return;
+    }
+    tableHost.innerHTML = fullResultsTableHtml();
+  }
+
+  document.getElementById('resPrintBtn').addEventListener('click', ()=>{
+    if(!allAwardees.length){ toast('Results are still loading — try again in a moment', 'info'); return; }
+    // Opens a clean, print-only version of the table in a new tab; the
+    // visitor uses their browser's own print dialog and picks "Save as
+    // PDF" there — no PDF-generation library needed, and it always
+    // reflects whatever's currently in the Sheet.
+    const w = window.open('', '_blank');
+    if(!w){ toast('Please allow pop-ups to print the results', 'err'); return; }
+    w.document.write(`<!DOCTYPE html><html><head><title>Sports Fest 2026 — Full Results</title>
+      <style>
+        body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#111;}
+        h1{font-size:20px;margin-bottom:4px;}
+        p.sub{color:#555;font-size:13px;margin-top:0;margin-bottom:20px;}
+        table{width:100%;border-collapse:collapse;font-size:13px;}
+        th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #ddd;}
+        th{background:#f2f2f2;}
+        @media print{ body{padding:0;} }
+      </style></head><body>
+      <h1>Prateek Laurel Sports Fest 2026 — Full Results</h1>
+      <p class="sub">Printed ${new Date().toLocaleString('en-IN')}</p>
+      ${fullResultsTableHtml()}
+      </body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(()=>{ w.print(); }, 300);
+  });
 }
 
 /* =========================================================
@@ -4147,32 +4191,20 @@ async function adminPhotos(){
 }
 
 /* ---------- Admin: Results & Awardees ---------- */
-// Two independent pieces on one screen: (1) a list of published results
-// PDFs anyone can download from the public Results page, and (2) a link
-// to a Google Sheet ("Publish to web" -> CSV) that IS the awardee list —
-// nothing is copied into the database. The public Results page fetches
-// that Sheet live on every visit, so editing the Sheet directly is all
-// it takes to update what visitors see; there is no re-upload step.
+// A link to a Google Sheet ("Publish to web" -> CSV) that IS the full
+// results/awardee list — nothing is copied into the database, and there
+// is no separate PDF to maintain. The public Results page fetches this
+// Sheet live on every visit and shows it as a searchable table, so
+// editing the Sheet directly is all it takes to update the site; a
+// visitor who wants a PDF copy uses the Print/Save-as-PDF button there,
+// which is always built from whatever's currently in the Sheet.
 async function adminResults(){
   const main = document.getElementById('adminMain');
   const settings = await getSettings();
   main.innerHTML = `
-    <h3 class="h-md" style="margin-bottom:14px;">Upload Results PDF</h3>
-    <p class="hint" style="margin-bottom:16px;">This appears on the public Results page for anyone to download. You can upload more than one (e.g. one per sport).</p>
-    <div class="form-card" style="max-width:520px;padding:22px;margin-bottom:36px;">
-      <div class="field"><label>Label (optional)</label><input type="text" id="resLabel" placeholder="e.g. Badminton — Final Results"></div>
-      <div class="field">
-        <label>PDF File</label>
-        <div class="upload-box" id="resFileBox"><p class="mono" style="font-size:12px;color:var(--slate);">📎 Click to choose a PDF</p><input type="file" id="resFileInput" accept=".pdf" style="display:none;"></div>
-      </div>
-      <button class="btn btn-primary btn-sm" id="resFileAddBtn">Upload PDF</button>
-    </div>
-    <h3 class="h-md" style="margin-bottom:14px;">Uploaded Results PDFs</h3>
-    <div id="resFileListAdmin" style="margin-bottom:44px;"><div class="loading-dots">Loading…</div></div>
-
-    <h3 class="h-md" style="margin-bottom:14px;">Awardees — Google Sheet (for name search)</h3>
+    <h3 class="h-md" style="margin-bottom:14px;">Awardees — Google Sheet</h3>
     <p class="hint" style="margin-bottom:16px;">
-      Paste the link to a Google Sheet published to the web as CSV. The public Results page reads this Sheet live —
+      Paste the link to a Google Sheet published to the web as CSV. The public Results page reads this Sheet live and shows it as the full results table (with a Print / Save as PDF option) —
       any edit you make in Google Sheets (add a row, fix a typo, delete an award) shows up on the site immediately, with nothing to re-upload here.
     </p>
     <div class="form-card" style="max-width:640px;padding:22px;margin-bottom:20px;">
@@ -4192,58 +4224,6 @@ async function adminResults(){
     <div id="resSheetPreview"><div class="loading-dots">Loading…</div></div>
   `;
 
-  // --- PDF upload (unchanged) ---
-  let resFile = null;
-  const fileBox = document.getElementById('resFileBox');
-  const fileInput = document.getElementById('resFileInput');
-  fileBox.addEventListener('click', ()=>fileInput.click());
-  fileInput.addEventListener('change', ()=>{
-    const f = fileInput.files[0]; if(!f) return;
-    resFile = f;
-    fileBox.innerHTML = `<p class="mono" style="font-size:12px;color:var(--green);">✓ ${esc(f.name)} (${(f.size/1024).toFixed(0)} KB)</p>`;
-    fileBox.addEventListener('click', ()=>fileInput.click());
-  });
-  document.getElementById('resFileAddBtn').addEventListener('click', async ()=>{
-    if(!resFile){ toast('Choose a PDF first', 'err'); return; }
-    const btn = document.getElementById('resFileAddBtn');
-    btn.disabled = true; btn.textContent = 'Uploading…';
-    const path = await uploadRawFile('results-pdf', resFile);
-    btn.disabled = false; btn.textContent = 'Upload PDF';
-    if(!path){ toast('Upload failed — try again', 'err'); return; }
-    const label = document.getElementById('resLabel').value.trim();
-    const {ok, error} = await tInsert('results_files', {label: label || null, file_name: resFile.name, file_path: path});
-    if(!ok){ console.error(error); toast('Could not save — try again', 'err'); return; }
-    toast('Results PDF uploaded', 'ok');
-    adminResults();
-  });
-
-  async function loadFileList(){
-    const list = await tFetchAll('results_files', 'uploaded_at', false);
-    const host = document.getElementById('resFileListAdmin');
-    if(!list.length){ host.innerHTML = `<div class="empty-state"><p>No results PDFs uploaded yet.</p></div>`; return; }
-    host.innerHTML = list.map(f=>`
-      <div class="card" style="padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <div>
-          <strong>📕 ${esc(f.label || f.file_name)}</strong>
-          ${f.label ? `<div class="hint" style="margin-top:2px;">${esc(f.file_name)}</div>` : ''}
-          <div class="hint" style="margin-top:2px;">Posted ${fmtDateTime(f.uploaded_at)}</div>
-        </div>
-        <button class="btn-del btn-sm" data-del-res="${f.id}" data-path="${f.file_path}">Delete</button>
-      </div>`).join('');
-    host.querySelectorAll('[data-del-res]').forEach(el=>{
-      el.addEventListener('click', async ()=>{
-        if(!confirm('Delete this results PDF?')) return;
-        const {error: storageError} = await sb.storage.from('results-pdf').remove([el.dataset.path]);
-        if(storageError){ console.error(storageError); toast("Couldn't remove the file — try again", 'err'); return; }
-        await tDelete('results_files', el.dataset.delRes);
-        toast('Deleted', 'info');
-        loadFileList();
-      });
-    });
-  }
-  loadFileList();
-
-  // --- Google Sheet link ---
   async function loadSheetPreview(){
     const countEl = document.getElementById('resSheetCount');
     const previewEl = document.getElementById('resSheetPreview');
