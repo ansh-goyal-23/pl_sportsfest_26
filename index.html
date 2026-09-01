@@ -1776,24 +1776,13 @@ async function renderResults(){
             ${f.label ? `<div class="hint" style="margin-top:2px;">${esc(f.file_name)}</div>` : ''}
             <div class="hint" style="margin-top:2px;">Posted ${fmtDateTime(f.uploaded_at)}</div>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-outline btn-sm" data-view-pdf="${i}">👁 View</button>
-            <a class="btn btn-outline btn-sm" href="${url}" download target="_blank" rel="noopener">⬇ Download</a>
-          </div>
+          <a class="btn btn-outline btn-sm" href="${url}" download target="_blank" rel="noopener">⬇ Download</a>
         </div>
-        <div class="pdf-inline-viewer" id="pdfViewer${i}" style="display:none;margin-top:14px;">
+        <div class="pdf-inline-viewer" style="margin-top:14px;">
           <iframe src="${url}#toolbar=1" title="${esc(f.label || f.file_name)}" loading="lazy"></iframe>
         </div>
       </div>`;
     }).join('');
-    fileHost.querySelectorAll('[data-view-pdf]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const panel = document.getElementById('pdfViewer'+btn.dataset.viewPdf);
-        const open = panel.style.display !== 'none';
-        panel.style.display = open ? 'none' : 'block';
-        btn.textContent = open ? '👁 View' : '✕ Hide';
-      });
-    });
   }
 }
 
