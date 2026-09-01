@@ -386,6 +386,21 @@ textarea{resize:vertical;min-height:90px;}
 .results-table th:nth-child(4),.results-table td:nth-child(4){width:20%;}
 .results-table th:nth-child(5),.results-table td:nth-child(5){width:14%;}
 .results-table th:nth-child(6),.results-table td:nth-child(6){width:20%;}
+/* Below this width the fixed % column widths get squeezed so tight
+   that words break letter-by-letter (e.g. "Unknown" wrapping to one
+   character per line). Switch to a natural-width table with a floor,
+   and let the existing overflow-x:auto wrapper handle horizontal
+   scrolling instead — a sideways swipe beats unreadable text. */
+@media(max-width:700px){
+  .results-table{table-layout:auto;width:auto;min-width:640px;}
+  .results-table th,.results-table td{white-space:nowrap;word-break:normal;}
+  .results-table th:nth-child(1),.results-table td:nth-child(1),
+  .results-table th:nth-child(2),.results-table td:nth-child(2),
+  .results-table th:nth-child(3),.results-table td:nth-child(3),
+  .results-table th:nth-child(4),.results-table td:nth-child(4),
+  .results-table th:nth-child(5),.results-table td:nth-child(5),
+  .results-table th:nth-child(6),.results-table td:nth-child(6){width:auto;}
+}
 @media print{.topbar,.ticker-wrap,footer,.no-print{display:none;}}
 </style>
 </head>
@@ -1951,7 +1966,7 @@ async function renderResults(){
   });
 
   function fullResultsTableHtml(){
-    return `<div style="overflow-x:auto;"><table class="results-table" style="width:100%;border-collapse:collapse;">
+    return `<div style="overflow-x:auto;"><table class="results-table" style="border-collapse:collapse;">
       <thead><tr>
         <th>Name</th><th>Flat</th><th>Sport</th><th>Event</th><th>Category</th><th>Award</th>
       </tr></thead>
