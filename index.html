@@ -386,21 +386,22 @@ textarea{resize:vertical;min-height:90px;}
 .results-table th:nth-child(4),.results-table td:nth-child(4){width:20%;}
 .results-table th:nth-child(5),.results-table td:nth-child(5){width:14%;}
 .results-table th:nth-child(6),.results-table td:nth-child(6){width:20%;}
-/* Below this width the fixed % column widths get squeezed so tight
-   that words break letter-by-letter (e.g. "Unknown" wrapping to one
-   character per line). Switch to a natural-width table with a floor,
-   and let the existing overflow-x:auto wrapper handle horizontal
-   scrolling instead — a sideways swipe beats unreadable text. */
+/* A table's columns always end up squeezed unreadable on a phone no
+   matter how the widths are tuned, so below this width the table is
+   swapped out entirely for a stacked card per awardee (.results-cards)
+   — plain CSS show/hide between the two, so there's no auto-layout
+   sizing quirk to fight. */
+.results-cards{display:none;}
 @media(max-width:700px){
-  .results-table{table-layout:auto;width:auto;min-width:640px;}
-  .results-table th,.results-table td{white-space:nowrap;word-break:normal;}
-  .results-table th:nth-child(1),.results-table td:nth-child(1),
-  .results-table th:nth-child(2),.results-table td:nth-child(2),
-  .results-table th:nth-child(3),.results-table td:nth-child(3),
-  .results-table th:nth-child(4),.results-table td:nth-child(4),
-  .results-table th:nth-child(5),.results-table td:nth-child(5),
-  .results-table th:nth-child(6),.results-table td:nth-child(6){width:auto;}
+  .results-table-wrap{display:none;}
+  .results-cards{display:block;}
 }
+.results-card{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;background:var(--white);}
+.results-card h4{font-family:'Oswald';font-size:16px;text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px;}
+.results-card .rc-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-top:1px solid var(--line);font-size:13.5px;}
+.results-card .rc-row:first-of-type{border-top:none;}
+.results-card .rc-label{font-family:'IBM Plex Mono';font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate);flex-shrink:0;}
+.results-card .rc-award{font-family:'Oswald';text-transform:uppercase;color:var(--maroon);text-align:right;}
 @media print{.topbar,.ticker-wrap,footer,.no-print{display:none;}}
 </style>
 </head>
@@ -1965,6 +1966,9 @@ async function renderResults(){
     searchTimer = setTimeout(runSearch, 150);
   });
 
+  // Used for the Print/PDF view, which always wants a real table
+  // regardless of screen size (paper is wide enough, and a card layout
+  // would print oddly).
   function fullResultsTableHtml(){
     return `<div style="overflow-x:auto;"><table class="results-table" style="border-collapse:collapse;">
       <thead><tr>
@@ -1983,6 +1987,25 @@ async function renderResults(){
     </table></div>`;
   }
 
+  // Stacked-card layout for narrow screens — a table's columns get
+  // squeezed unreadable on a phone no matter how the widths are tuned,
+  // so below a breakpoint this renders instead: one labeled card per
+  // awardee. Toggling which of the two markups is visible is done in
+  // pure CSS (.results-table-wrap / .results-cards), so it can't get
+  // stuck in a half-applied state the way conflicting inline/table
+  // auto-layout widths did.
+  function resultsCardsHtml(){
+    return allAwardees.map(a=>`
+      <div class="results-card">
+        <h4>${esc(a.name)}</h4>
+        <div class="rc-row"><span class="rc-label">Flat</span><span>${esc(a.flat||'—')}</span></div>
+        <div class="rc-row"><span class="rc-label">Sport</span><span>${esc(a.sport||'—')}</span></div>
+        <div class="rc-row"><span class="rc-label">Event</span><span>${esc(a.event||'—')}</span></div>
+        <div class="rc-row"><span class="rc-label">Category</span><span>${esc(a.category||'—')}</span></div>
+        <div class="rc-row"><span class="rc-label">Award</span><span class="rc-award">${a.award?('🏆 '+esc(a.award)):'—'}</span></div>
+      </div>`).join('');
+  }
+
   function renderFullTable(){
     if(sheetStatus === 'not-configured'){
       tableHost.innerHTML = `<div class="empty-state"><div class="em-icon">🏆</div><p>Results haven't been posted yet — check back soon.</p></div>`;
@@ -1996,7 +2019,7 @@ async function renderResults(){
       tableHost.innerHTML = `<div class="empty-state"><p>Results are set up, but no rows were found — check back soon.</p></div>`;
       return;
     }
-    tableHost.innerHTML = fullResultsTableHtml();
+    tableHost.innerHTML = `<div class="results-table-wrap">${fullResultsTableHtml()}</div><div class="results-cards">${resultsCardsHtml()}</div>`;
   }
 
   document.getElementById('resPrintBtn').addEventListener('click', ()=>{
