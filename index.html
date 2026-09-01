@@ -358,10 +358,10 @@ textarea{resize:vertical;min-height:90px;}
 .cf-slide.side2{opacity:.55; filter:brightness(.55); transform:translateX(calc(var(--off,0) * 40%)) scale(0.6);}
 .cf-slide.side1{opacity:.85; filter:brightness(.7); transform:translateX(calc(var(--off,0) * 44%)) scale(0.78); pointer-events:auto; cursor:pointer;}
 .cf-slide.current{
-  opacity:1; filter:brightness(1);
-  transform:translateX(0) scale(1);
+  opacity:1 !important; filter:brightness(1) !important;
+  transform:translateX(0) scale(1) !important;
   z-index:100 !important;
-  pointer-events:auto;
+  pointer-events:auto !important;
 }
 .slide-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(11,20,31,.55);color:var(--bright);border:none;width:38px;height:38px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:200;}
 .slide-nav.prev{left:14px;}
@@ -1589,7 +1589,19 @@ async function initHomeSlideshow(){
     });
     dots.forEach(d=> d.classList.toggle('active', Number(d.dataset.i)===active));
   }
+  // First layout pass runs with transitions off, so the very first paint
+  // snaps straight to its correct position/opacity instead of animating
+  // in from the base (invisible) state — a background/inactive tab can
+  // otherwise get the page's very first paint stuck mid-transition
+  // (Chrome throttles transitions in hidden tabs), which looked like the
+  // slideshow showing nothing at all. Transitions are re-enabled on the
+  // next frame so every later show() still animates normally.
+  slideEls.forEach(el=> el.style.transition = 'none');
   layout();
+  void host.offsetWidth; // force layout so the "none" transition is committed before re-enabling
+  requestAnimationFrame(()=>{
+    slideEls.forEach(el=> el.style.transition = '');
+  });
 
   function show(i){
     active = ((i % n) + n) % n;
