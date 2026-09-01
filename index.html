@@ -497,6 +497,7 @@ async function fetchAwardeesFromSheet(){
     const parsed = parseCsv(text);
     const rows = parsed.map(r=>({
       name: r.name || r['full name'] || '',
+      flat: r.flat || r['flat number'] || r['flat no'] || r['flat no.'] || '',
       sport: r.sport || '',
       event: r.event || '',
       category: r.category || '',
@@ -1845,6 +1846,7 @@ async function renderResults(){
       <div class="card" style="padding:16px 18px;">
         <div class="tag">${esc(a.sport||'')}</div>
         <h3 style="margin-top:6px;">${esc(a.name)}</h3>
+        ${a.flat ? `<p style="font-size:13px;color:var(--slate);margin-top:2px;">🏠 Flat ${esc(a.flat)}</p>` : ''}
         ${a.event ? `<p style="font-size:14px;color:var(--slate);margin-top:4px;">${esc(a.event)}${a.category?' — '+esc(a.category):''}</p>` : ''}
         ${a.award ? `<p style="margin-top:8px;font-family:'Oswald';text-transform:uppercase;color:var(--maroon);font-size:14.5px;">🏆 ${esc(a.award)}</p>` : ''}
       </div>`).join('')}</div>`;
@@ -4183,7 +4185,7 @@ async function adminResults(){
       <div id="resSheetMsg" style="margin-top:10px;"></div>
       <p class="hint" style="margin-top:14px;">
         In Google Sheets: <strong>File → Share → Publish to web</strong> → select the sheet tab → format <strong>Comma-separated values (.csv)</strong> → Publish, then paste that link above.
-        First row must be headers: <strong>Name, Sport, Event, Category, Award</strong> (any order, not case-sensitive).
+        First row must be headers: <strong>Name, Flat, Sport, Event, Category, Award</strong> (any order, not case-sensitive).
       </p>
     </div>
     <h3 class="h-md" style="margin-bottom:14px;">Live Preview (<span id="resSheetCount">–</span> rows)</h3>
@@ -4261,9 +4263,10 @@ async function adminResults(){
       return;
     }
     previewEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
-      <tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Name</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Sport</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Event</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Category</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Award</th></tr>
+      <tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Name</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Flat</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Sport</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Event</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Category</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Award</th></tr>
       ${res.rows.map(a=>`<tr>
         <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.name)}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.flat||'')}</td>
         <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.sport||'')}</td>
         <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.event||'')}</td>
         <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.category||'')}</td>
@@ -4299,11 +4302,12 @@ async function adminResults(){
       const rows = parseCsv(text);
       msg.innerHTML = `<p class="hint" style="color:var(--green);">Looks good — found ${rows.length} row${rows.length===1?'':'s'}. Click Save Link to use it on the site.</p>`;
       countEl.textContent = rows.length;
-      const mapped = rows.map(r2=>({name:r2.name||'', sport:r2.sport||'', event:r2.event||'', category:r2.category||'', award:r2.award||r2.position||r2.result||''})).filter(r2=>r2.name);
+      const mapped = rows.map(r2=>({name:r2.name||'', flat:r2.flat||r2['flat number']||r2['flat no']||r2['flat no.']||'', sport:r2.sport||'', event:r2.event||'', category:r2.category||'', award:r2.award||r2.position||r2.result||''})).filter(r2=>r2.name);
       previewEl.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
-        <tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Name</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Sport</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Event</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Category</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Award</th></tr>
+        <tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Name</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Flat</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Sport</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Event</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Category</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);">Award</th></tr>
         ${mapped.map(a=>`<tr>
           <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.name)}</td>
+          <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.flat)}</td>
           <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.sport)}</td>
           <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.event)}</td>
           <td style="padding:8px;border-bottom:1px solid var(--line);">${esc(a.category)}</td>
